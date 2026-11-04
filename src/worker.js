@@ -36,6 +36,22 @@ export default {
       const q = String(url.searchParams.get("q") || "").slice(0, 40);
       return env.SCHOOL.get(env.SCHOOL.idFromName(REGISTRY)).fetch(new Request(`https://school.internal/reg/search?q=${encodeURIComponent(q)}`, { headers: { "x-tt-sid": REGISTRY } }));
     }
+    // 최고관리자 창: 모든 학교 보기 · 학교관리자 코드 다시 정하기
+    if (url.pathname.startsWith("/api/super/") && req.method === "POST") {
+      const b = await req.json().catch(() => ({}));
+      const reg = env.SCHOOL.get(env.SCHOOL.idFromName(REGISTRY));
+      const ip = req.headers.get("cf-connecting-ip") || "local";
+      const chk = await reg.fetch(new Request("https://school.internal/reg/super", { method: "POST", headers: { "x-tt-sid": REGISTRY, "content-type": "application/json", "x-tt-ip": ip, "x-tt-super-code": String(env.SUPER_CODE || "") }, body: JSON.stringify({ code: b.code || "" }) }));
+      if (!chk.ok) return chk;
+      if (url.pathname === "/api/super/schools") return reg.fetch(new Request("https://school.internal/reg/all", { headers: { "x-tt-sid": REGISTRY } }));
+      if (url.pathname === "/api/super/admin-code") {
+        const sid = String(b.sid || "");
+        if (!SID_RE.test(sid)) return fail(400, "bad", "학교 코드가 올바르지 않습니다.");
+        return env.SCHOOL.get(env.SCHOOL.idFromName(sid)).fetch(new Request("https://school.internal/super-admin-code", { method: "POST", headers: { "x-tt-sid": sid, "x-tt-super-ok": "1", "content-type": "application/json" }, body: JSON.stringify({ code: b.newCode || "" }) }));
+      }
+      if (url.pathname === "/api/super/check") return json({ ok: true });
+      return fail(404, "not_found", "잘못된 주소입니다.");
+    }
     const m = url.pathname.match(/^\/api\/s\/([^/]+)(\/.*)$/);
     if (!m || !SID_RE.test(m[1])) return fail(404, "not_found", "잘못된 주소입니다.");
     const sid = m[1];
@@ -199,6 +215,10 @@ export class SchoolDO extends DurableObject {
         b.sid, String(b.name || ""), norm(b.name) + " " + b.sid, b.listed ? 1 : 0, Date.now());
       return json({ ok: true });
     }
+    if (path === "/reg/all") {
+      const rows = this.sql.exec("SELECT sid, name, listed, at FROM reg ORDER BY name").toArray();
+      return json({ schools: rows });
+    }
     if (path === "/reg/search") {
       const q = norm(new URL(req.url).searchParams.get("q"));
       if (!q) return json({ results: [] });
@@ -230,6 +250,14 @@ export class SchoolDO extends DurableObject {
       const body = method === "GET" ? {} : await req.json().catch(() => ({}));
       const ip = req.headers.get("x-tt-ip") || "local";
 
+      if (path === "/super-admin-code" && method === "POST") {
+        if (req.headers.get("x-tt-super-ok") !== "1") return fail(403, "super", "최고관리자만 할 수 있습니다.");
+        if (!this.exists()) return fail(404, "not_found", "없는 학교입니다.");
+        const code = cleanCode(body.code);
+        if (code.length < 6) return fail(400, "bad", "학교관리자 코드는 영문·숫자 6자 이상입니다.");
+        await this.setLock(ADMIN, code);
+        return json({ ok: true });
+      }
       if (path === "/create" && method === "POST") {
         if (req.headers.get("x-tt-allow-new") !== "1") return fail(403, "closed", "이 서버는 새 학교 만들기를 막아 두었습니다.");
         if (req.headers.get("x-tt-super-ok") !== "1") return fail(403, "super", "새 학교는 최고관리자만 만들 수 있습니다.");
@@ -280,6 +308,7 @@ export class SchoolDO extends DurableObject {
         const pid = slotMatch[1];
         if (!admin && !me.has(pid)) return fail(403, "denied", "권한이 없습니다. 인증코드로 다시 들어와 주세요.");
         if (!people.has(pid)) return fail(400, "bad", "없는 선생님입니다.");
+        if (!admin && (this.kvGet("school") || {}).finalized) return fail(403, "finalized", "시간표가 확정(3단계)되어 고칠 수 없습니다.");
         const e = this.cleanEntries(body.e);
         if (!e) return fail(400, "bad", "시간표 자료가 올바르지 않습니다.");
         const at = Date.now();
