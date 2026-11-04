@@ -30,7 +30,7 @@ export default {
     const url = new URL(req.url);
     if (!url.pathname.startsWith("/api/")) return env.ASSETS.fetch(req);
     if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: CORS });
-    if (url.pathname === "/api/health") return json({ ok: true, app: "tt", v: 1, version: VERSION, allowNew: env.ALLOW_NEW_SCHOOL !== "false", search: true });
+    if (url.pathname === "/api/health") return json({ ok: true, app: "tt", v: 1, version: VERSION, allowNew: env.ALLOW_NEW_SCHOOL !== "false", superOnly: true, search: true });
     if (url.pathname === "/api/search") {
       // 첫 화면 학교 검색: 학교 목록은 '_registry' 라는 이름의 저장소 하나에 모아 둠 (학교 코드 규칙과 겹치지 않는 이름)
       const q = String(url.searchParams.get("q") || "").slice(0, 40);
@@ -43,6 +43,19 @@ export default {
     headers.set("x-tt-sid", sid);
     headers.set("x-tt-ip", req.headers.get("cf-connecting-ip") || "local");
     headers.set("x-tt-allow-new", env.ALLOW_NEW_SCHOOL === "false" ? "0" : "1");
+    headers.delete("x-tt-super-ok"); // 밖에서 보낸 값은 버림
+    // 새 학교 만들기: 최고관리자 코드(SUPER_CODE 비밀값)를 한 곳(_registry)에서 확인 — 틀린 횟수도 거기서 셈
+    if (m[2] === "/create" && req.method === "POST") {
+      let b = {};
+      try { b = await req.clone().json(); } catch (e) {}
+      const r = await env.SCHOOL.get(env.SCHOOL.idFromName(REGISTRY)).fetch(new Request("https://school.internal/reg/super", {
+        method: "POST",
+        headers: { "x-tt-sid": REGISTRY, "content-type": "application/json", "x-tt-ip": headers.get("x-tt-ip"), "x-tt-super-code": String(env.SUPER_CODE || "") },
+        body: JSON.stringify({ code: b.superCode || "" }),
+      }));
+      if (!r.ok) return r;
+      headers.set("x-tt-super-ok", "1");
+    }
     const inner = new Request(new URL(m[2] + url.search, "https://school.internal"), { method: req.method, headers, body: req.body });
     return env.SCHOOL.get(env.SCHOOL.idFromName(sid)).fetch(inner);
   },
@@ -162,6 +175,23 @@ export class SchoolDO extends DurableObject {
   regTable() { this.sql.exec("CREATE TABLE IF NOT EXISTS reg (sid TEXT PRIMARY KEY, name TEXT NOT NULL, key TEXT NOT NULL, listed INTEGER NOT NULL, at INTEGER NOT NULL)"); }
   async regFetch(req, path) {
     this.regTable();
+    if (path === "/reg/super" && req.method === "POST") {
+      this.sql.exec("CREATE TABLE IF NOT EXISTS fails (k TEXT PRIMARY KEY, n INTEGER NOT NULL, first INTEGER NOT NULL, until INTEGER NOT NULL)");
+      const want = cleanCode(req.headers.get("x-tt-super-code") || "");
+      if (want.length < 8) return fail(403, "no_super", "서버에 최고관리자 코드(SUPER_CODE, 영문·숫자 8자 이상)가 설정되어 있지 않아 새 학교를 만들 수 없습니다.");
+      const ip = req.headers.get("x-tt-ip") || "local";
+      const wait = this.blocked([`super:${ip}`, "super:all"]);
+      if (wait) return fail(429, "wait", `최고관리자 코드를 여러 번 틀려 잠시 막았습니다. ${Math.ceil(wait / 60)}분 뒤에 다시 해 주세요.`, { wait });
+      const b = await req.json().catch(() => ({}));
+      const [x, y] = await Promise.all([sha("super|" + cleanCode(b.code)), sha("super|" + want)]);
+      if (x !== y) {
+        this.addFail(`super:${ip}`, 5, 30 * 60 * 1000);
+        this.addFail("super:all", 30, 60 * 60 * 1000);
+        return fail(403, "super", "최고관리자 코드가 맞지 않습니다.");
+      }
+      this.sql.exec("DELETE FROM fails WHERE k=?", `super:${ip}`);
+      return json({ ok: true });
+    }
     if (path === "/reg/put" && req.method === "POST") {
       const b = await req.json().catch(() => ({}));
       if (!SID_RE.test(b.sid || "")) return fail(400, "bad", "잘못된 요청입니다.");
@@ -202,6 +232,7 @@ export class SchoolDO extends DurableObject {
 
       if (path === "/create" && method === "POST") {
         if (req.headers.get("x-tt-allow-new") !== "1") return fail(403, "closed", "이 서버는 새 학교 만들기를 막아 두었습니다.");
+        if (req.headers.get("x-tt-super-ok") !== "1") return fail(403, "super", "새 학교는 최고관리자만 만들 수 있습니다.");
         if (this.exists()) return fail(409, "exists", "이미 있는 학교 코드입니다.");
         const doc = this.cleanSchool(body.doc);
         const code = cleanCode(body.adminCode);
