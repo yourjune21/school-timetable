@@ -134,6 +134,7 @@ export class SchoolDO extends DurableObject {
       const v = e[k];
       if (!KEY_RE.test(k) || !v || typeof v !== "object") return null;
       out[k] = { s: String(v.s || "").slice(0, 40), r: String(v.r || "").slice(0, 40) };
+      if (v.j) out[k].j = 1; // 협력수업(함께 들어가기)
     }
     return out;
   }
