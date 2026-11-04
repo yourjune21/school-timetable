@@ -759,6 +759,7 @@ tr.drop-below td { box-shadow: inset 0 -3px 0 var(--brand); }
 .free-g td.free-no .cell { background: transparent; border-left: 0; color: var(--paper-muted); align-items: flex-start; justify-content: flex-start; gap: 0; }
 .free-g td.free-no .cell small { white-space: normal; text-align: left; }
 :root[data-theme="dark"] .free-g td.free-ok { background: #1d4a3a; }
+.free-off { color: var(--paper-muted); font-style: italic; }
 
 </style>
 </head>
@@ -797,9 +798,10 @@ window.TT_CONFIG = {
  * build.py가 이 값을 서버(cloudflare/src/version.js)에도 똑같이 넣어, 화면과 서버 버전이 늘 같습니다. */
 (function () {
   const T = (window.TT = window.TT || {});
-  T.VERSION = "1.23.0";
+  T.VERSION = "1.23.1";
   T.RELEASED = "2026-11-04";
   T.CHANGES = [
+    ["1.23.1", "2026-11-04", ["교담 없는 시간 찾기: 여러 학년 함께 (예: 5·6학년 모든 반이 함께 비는 시간) · 학년별 따로도"]],
     ["1.23.0", "2026-11-04", ["담임 선생님 시간표는 반 이름 대신 과목을 크게", "자동 생성 미리보기: 칸을 길게 눌러(PC 두 번 클릭) 📌 고정 → 다시 생성해도 그대로", "자동 생성 미리보기·학급 입력은 좁은 화면에서도 좌우 스크롤 없이 월~금 모두", "출력: 🔍 교담 없는 시간 찾기 (학년 행사 잡기용, 음영 = 모든 반이 담임 수업)", "출력 색: 교사·강사별은 학급별 색, 학급별은 과목별 색으로 자동"]],
     ["1.22.0", "2026-11-04", ["최고관리자: 학교관리자 코드 없이 '기본설정 열기'", "관리에서 지금 학교관리자 코드 보기·바꾸기", "교과전담 배정: 반마다 맡는 선생님 나누기 (반 단추·'나눠 맡기')", "다음 학기 준비 → 지금 시간표를 보관함에 보관(조회만), 되돌리면 서로 바꿈"]],
     ["1.21.0", "2026-11-04", ["학급 수를 정하면 학급마다 담임 자리가 저절로 생김", "학급을 줄이거나 학년을 뺄 때 이름이 있거나 시간표를 넣은 담임이 있으면 확인창 (함께 지움)"]],
@@ -2125,33 +2127,43 @@ window.TT_CONFIG = {
     const lab = (k) => (T.colorBy === "class" ? k : T.personName(sc, k));
     return `<div class="hours legend">${[...seen.entries()].map(([k, it]) => `<span style="${T.colorVars(T.itemColor(sc, it))}"><i></i>${E(lab(k))}</span>`).join("")}</div>`;
   };
-  /* 교담 없는 시간 찾기: 학년의 모든 반이 담임 수업(또는 빈 칸)인 시간 */
-  T.freeSlots = (sc, idx, g) => {
-    const cls = T.classesOfGrade(sc, g).map((c) => c.id), sch = T.schedOfGrade(sc, g), days = T.dayList(sc);
+  /* 교담 없는 시간 찾기: 고른 학년(여러 개도)의 모든 반이 담임 수업(또는 빈 칸)인 시간 */
+  T.freeSlots = (sc, idx, gs) => {
+    gs = [].concat(gs);
+    const cls = gs.flatMap((g) => T.classesOfGrade(sc, g).map((c) => c.id));
+    const maxP = Math.max(0, ...gs.map((g) => T.schedOfGrade(sc, g).periods));
     const out = {};
-    days.forEach((d) => { for (let p = 1; p <= sch.periods; p++) {
-      const live = cls.filter((c) => !T.beyond(sc, c, d, p));
+    T.dayList(sc).forEach((d) => { for (let p = 1; p <= maxP; p++) {
+      const live = cls.filter((c) => p <= T.periodsOf(sc, c) && !T.beyond(sc, c, d, p));
       if (!live.length) { out[d + "|" + p] = { off: true }; continue; }
       const busy = [];
       live.forEach((c) => T.cellItems(idx, "class", c, d, p).forEach((it) => { const pr = T.person(sc, it.pid); if (it.b || (pr && pr.role !== "homeroom")) busy.push({ c, it }); }));
-      out[d + "|" + p] = { free: !busy.length, busy, n: live.length };
+      const offGs = gs.filter((g) => !live.some((c) => T.gradeOf(c) === g));
+      out[d + "|" + p] = { free: !busy.length, busy, n: live.length, offGs };
     } });
     return out;
   };
-  T.freeGridHTML = (sc, idx, g) => {
-    const f = T.freeSlots(sc, idx, g), sch = T.schedOfGrade(sc, g), days = T.dayList(sc);
+  T.freeGridHTML = (sc, idx, gs) => {
+    gs = [].concat(gs);
+    const f = T.freeSlots(sc, idx, gs), days = T.dayList(sc), multi = gs.length > 1;
+    const scheds = [...new Set(gs.map((g) => T.schedOfGrade(sc, g)))];
+    const maxP = Math.max(0, ...scheds.map((x) => x.periods));
     const nFree = Object.values(f).filter((x) => x.free).length;
-    const rows = Array.from({ length: sch.periods }, (_, k) => k + 1).map((p) => {
-      const t = (sch.times || [])[p - 1];
-      return `<tr><th class="g-p"><b>${p}</b>${t && t.s ? `<small>${E(t.s)}~${E(t.e)}</small>` : ""}</th>${days.map((d) => {
+    const glab = (g) => T.gradeName(g).replace(/학년$/, "");
+    const clsLab = (c) => (multi ? T.clsLabel(c) : T.clsLabel(c).replace(/^\d+-/, "") + (T.clsLabel(c) === c ? "반" : ""));
+    const rows = Array.from({ length: maxP }, (_, k) => k + 1).map((p) => {
+      const hs = T.periodHead(sc, scheds, p);
+      return `<tr><th class="g-p"><b>${p}</b>${hs.map((h) => `<small>${h.label ? E(h.label.replace("학년", "")) + " " : ""}${E(h.s)}~${E(h.e)}</small>`).join("")}</th>${days.map((d) => {
         const x = f[d + "|" + p];
         if (!x || x.off) return `<td class="beyond"></td>`;
-        if (x.free) return `<td class="free-ok"><div class="cell"><b>✓ 행사 가능</b><small>${x.n}개 반 모두 담임</small></div></td>`;
-        const by = {}; x.busy.forEach(({ c, it }) => { const k = it.b ? T.blockName(sc, it.b) : T.subjectShort(sc, it.s); (by[k] = by[k] || []).push(T.clsLabel(c).replace(/^\d+-/, "") + (T.clsLabel(c) === c ? "반" : "")); });
-        return `<td class="free-no"><div class="cell">${Object.entries(by).map(([k, v]) => `<small><b>${E(k)}</b> ${E([...new Set(v)].join("·"))}</small>`).join("")}</div></td>`;
+        const offNote = x.offGs && x.offGs.length ? `<small class="free-off">${E(x.offGs.map(glab).join("·"))}학년 수업 없음</small>` : "";
+        if (x.free) return `<td class="free-ok"><div class="cell"><b>✓ 행사 가능</b><small>${x.n}개 반 모두 담임</small>${offNote}</div></td>`;
+        const by = {}; x.busy.forEach(({ c, it }) => { const k = it.b ? T.blockName(sc, it.b) : T.subjectShort(sc, it.s); (by[k] = by[k] || []).push(clsLab(c)); });
+        return `<td class="free-no"><div class="cell">${Object.entries(by).map(([k, v]) => `<small><b>${E(k)}</b> ${E([...new Set(v)].join("·"))}</small>`).join("")}${offNote}</div></td>`;
       }).join("")}</tr>`;
     }).join("");
-    return `<div class="free-sum">${E(T.gradeName(g))} · 행사 가능 <b>${nFree}</b>칸</div><table class="g free-g"><thead><tr><th class="g-corner">교시</th>${days.map((d) => `<th>${T.DAYS[d]}</th>`).join("")}</tr></thead><tbody>${rows}</tbody></table>`;
+    const name = gs.map(glab).join("·") + "학년";
+    return `<div class="free-sum">${E(name)} ${multi ? "모두 " : ""}· 행사 가능 <b>${nFree}</b>칸</div><table class="g free-g"><thead><tr><th class="g-corner">교시</th>${days.map((d) => `<th>${T.DAYS[d]}</th>`).join("")}</tr></thead><tbody>${rows}</tbody></table>`;
   };
   T.hoursHTML = (sc, idx, kind, id) => {
     const h = T.hoursBy(idx, kind, id);
@@ -2307,7 +2319,10 @@ window.TT_CONFIG = {
           `grid-template-columns:repeat(${lay.cols},minmax(0,1fr));grid-template-rows:repeat(${lay.rows},minmax(0,1fr))`));
       });
     } else if (job.type === "free") {
-      (job.grades || []).forEach((g) => { if (T.classesOfGrade(sc, g).length) pages.push(pageWrap(sc, P, `${T.gradeName(g)} 행사 가능 시간`, "교담 없는 시간 찾기", `<div class="free-wrap">${T.freeGridHTML(sc, idx, g)}</div>`, "", "음영 칸 = 이 학년 모든 반이 담임 수업(교담·강사·묶음 수업 없음) → 학년 행사를 넣기 좋은 시간")); });
+      const gs = (job.grades || []).filter((g) => T.classesOfGrade(sc, g).length);
+      const groups = job.freeEach ? gs.map((g) => [g]) : gs.length ? [gs] : [];
+      groups.forEach((grp) => pages.push(pageWrap(sc, P, `${grp.map((g) => T.gradeName(g).replace(/학년$/, "")).join("·")}학년 행사 가능 시간`, grp.length > 1 ? "교담 없는 시간 찾기 · 여러 학년 함께" : "교담 없는 시간 찾기", `<div class="free-wrap">${T.freeGridHTML(sc, idx, grp)}</div>`, "",
+        grp.length > 1 ? "음영 칸 = 고른 학년 모든 반이 담임 수업(교담·강사·묶음 수업 없음) → 여러 학년 함께 하는 행사를 넣기 좋은 시간" : "음영 칸 = 이 학년 모든 반이 담임 수업(교담·강사·묶음 수업 없음) → 학년 행사를 넣기 좋은 시간")));
     } else if (job.type === "all") {
       const basis = job.basis || "class";
       const rows = T.matrixRows(sc, basis, basis === "room" ? { special: job.roomSpecial ? true : undefined } : {});
@@ -3659,7 +3674,7 @@ window.TT_CONFIG = {
     const s = sc(), pr = A.pr;
     if (!pr.grades) pr.grades = T.gradeList(s).map((x) => x.g);
     pr.grades = pr.grades.filter((g) => T.gradeList(s).some((x) => x.g === g));
-    const job = { type: pr.type, orient: pr.orient, perPage: pr.perPage, basis: pr.basis, gradeStyle: pr.gradeStyle, hours: pr.hours, color: pr.color || "subject", grades: pr.grades.slice().sort() };
+    const job = { type: pr.type, orient: pr.orient, perPage: pr.perPage, basis: pr.basis, gradeStyle: pr.gradeStyle, hours: pr.hours, color: pr.color || "subject", grades: pr.grades.slice().sort(), freeEach: !!pr.freeEach };
     if (["class", "person", "room"].includes(pr.type)) job.ids = sortIds(pr.type, prIds(pr.type));
     return job;
   }
@@ -3684,7 +3699,8 @@ window.TT_CONFIG = {
     if (pr.type === "grade") target = `<b>학년</b><div class="chips">${T.gradeList(s).map(({ g }) => `<button class="chip ${pr.grades.includes(g) ? "on" : ""}" data-act="pr-grade" data-g="${g}">${E(T.gradeName(g))}</button>`).join("")}</div>
       <b>모양</b>${seg([["grid", "학급별 표 모아 보기"], ["matrix", "한 줄에 한 학급"]], pr.gradeStyle, "pr-gstyle")}`;
     if (pr.type === "free") target = `<b>학년</b><div class="chips">${T.gradeList(s).map(({ g }) => `<button class="chip ${pr.grades.includes(g) ? "on" : ""}" data-act="pr-grade" data-g="${g}">${E(T.gradeName(g))}</button>`).join("")}</div>
-      <p class="hint">학년을 고르면 그 학년 <b>모든 반이 담임 수업</b>인 시간(교담·강사·묶음 수업 없음)을 음영으로 보여 줍니다. 학년 행사·체험학습 시간을 잡을 때 쓰세요.</p>`;
+      <b>찾는 방법</b>${seg([["all", "고른 학년 함께"], ["each", "학년별 따로"]], pr.freeEach ? "each" : "all", "pr-free")}
+      <p class="hint">${pr.freeEach ? "학년마다 그 학년 <b>모든 반이 담임 수업</b>인 시간을 따로 보여 줍니다." : "예: 5·6학년을 고르면 <b>5·6학년 모든 반이 함께 담임 수업</b>인 시간(교담·강사·묶음 수업 없음)을 음영으로 보여 줍니다."} 학년 행사·체험학습 시간을 잡을 때 쓰세요.</p>`;
     if (pr.type === "all") target = `<b>기준</b>${seg([["class", "학급"], ["person", "교사·강사"], ["room", "교실"]], pr.basis, "pr-basis")}`;
     const perPage = ["class", "person", "room"].includes(pr.type)
       ? `<b>한 장에</b>${seg([[1, "1개"], [2, "2개"], [4, "4개"], [6, "6개"]], pr.perPage, "pr-per")}` : "";
@@ -5090,6 +5106,7 @@ window.TT_CONFIG = {
     },
     "pr-type": (el) => { A.pr.type = el.dataset.v; A.pr.color = el.dataset.v === "person" ? "class" : el.dataset.v === "free" ? "subject" : "subject"; render(); }, // 강사·교사 출력은 학급별 색, 학급 출력은 과목별 색
     "pr-color": (el) => { A.pr.color = el.dataset.v; render(); },
+    "pr-free": (el) => { A.pr.freeEach = el.dataset.v === "each"; render(); },
     "pr-id": (el) => { const ids = prIds(A.pr.type); const i = ids.indexOf(el.dataset.id); i >= 0 ? ids.splice(i, 1) : ids.push(el.dataset.id); render(); },
     "pr-all": () => {
       const s = sc();
