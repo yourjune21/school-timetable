@@ -464,6 +464,20 @@ tr.drop-below td { box-shadow: inset 0 -3px 0 var(--brand); }
 .ed-grid .g .cell.empty.beyond::after { content: "—"; }
 .ed-grid .g .cell.beyond small { color: var(--paper-muted); }
 
+/* 시정마다 시각이 다른 교시 (사람 시간표) */
+.g .g-p small.pt { display: block; white-space: nowrap; letter-spacing: -0.02em; }
+.g .g-p small.pt i { font-style: normal; font-weight: 700; margin-right: 3px; padding: 0 4px; border-radius: 4px; background: var(--shade); }
+.g .cell small.sg { font-weight: 700; opacity: 1; padding: 0 5px; border-radius: 999px; background: color-mix(in srgb, var(--c-line, #888) 20%, transparent); }
+.page .g .cell small.sg { background: rgba(0, 0, 0, 0.07); }
+.g .cell.split { padding: 0; gap: 2px; background: none; border-left: 0; justify-content: stretch; align-items: stretch; }
+.g .cell.split > .half { flex: 1 1 0; min-height: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; border-radius: 5px; overflow: hidden; background: var(--c-bg, transparent); color: var(--c-ink, inherit); border-left: 4px solid var(--c-line, transparent); padding: 0 3px; }
+.g .cell.split > .half b { font-size: 0.92em; }
+.g .cell.split > .half small { font-size: 0.68em; }
+.g.g-wide { --g-pw: 92px; }
+.g .cell small.sg i { font-style: normal; }
+.ed-grid .g .cell small.sg span { display: none; }
+.ed-grid .g .cell.split small.sg span:first-child { display: inline; }
+
 </style>
 </head>
 <body>
@@ -501,9 +515,10 @@ window.TT_CONFIG = {
  * build.py가 이 값을 서버(cloudflare/src/version.js)에도 똑같이 넣어, 화면과 서버 버전이 늘 같습니다. */
 (function () {
   const T = (window.TT = window.TT || {});
-  T.VERSION = "1.9.0";
+  T.VERSION = "1.10.0";
   T.RELEASED = "2026-11-04";
   T.CHANGES = [
+    ["1.10.0", "2026-11-04", ["학년군 기본 시정을 학교 통합 시정표(2026. 3. 1.)대로: 1~4학년 3교시 뒤 점심 11:30~12:10, 5·6학년 4교시 뒤 점심 12:10~12:50", "교사·강사 시간표에 학년별 교시 시각 표시 (4교시 1~4학년 12:10, 5·6학년 11:30 등)", "시정이 다른 교시에는 칸마다 '3·4학년 기준 12:10~12:50'처럼 표시", "같은 교시라도 시각이 안 겹치면 두 학급 수업을 함께 넣고 나눠서 보여 줌"]],
     ["1.9.0", "2026-11-04", ["시정표마다 요일별 교시 수(짧은 날·긴 날)", "학년군 기본 시정: 1·2학년 하루 5교시·나머지 4교시, 3·4학년 하루 6교시·나머지 5교시, 5·6학년 하루 5교시·나머지 6교시", "자동 생성·배치는 요일별 교시 수 안에서만", "넘는 칸에 직접 넣거나 옮기면 확인창"]],
     ["1.8.0", "2026-11-04", ["교과전담·강사 기본 교실: 그 선생님 수업은 기본 교실로 자동 설정(입력·자동 생성·자동 배치)", "선생님이 입력 화면에서 직접 '내 기본 교실' 지정", "이미 넣은 수업도 새 기본 교실로 한 번에 바꾸기(다른 반이 쓰는 시간은 건너뜀)"]],
     ["1.7.0", "2026-11-04", ["시수·학급 수 칸: 숫자를 바로 입력(숫자 자판) + −/＋ 단추", "시정표에 점심시간 시작·끝 시각 입력, 시간표에 함께 표시", "자동 생성·배치를 다시 누르면 다른 배치로 새로 생성", "교사·강사(교담) 시간표에는 점심 줄을 넣지 않음"]],
@@ -601,7 +616,7 @@ window.TT_CONFIG = {
   T.roleTag = (sc, pid) => { const p = T.person(sc, pid); return p && p.role === "subject" ? "교과전담" : p && p.role === "instructor" ? "강사" : ""; };
   T.defaultTimes = (level) =>
     level === "elem"
-      ? [["09:00", "09:40"], ["09:50", "10:30"], ["10:50", "11:30"], ["11:40", "12:20"], ["13:10", "13:50"], ["14:00", "14:40"], ["14:50", "15:30"], ["15:40", "16:20"], ["16:30", "17:10"]]
+      ? [["09:00", "09:40"], ["09:50", "10:30"], ["10:40", "11:20"], ["11:30", "12:10"], ["12:50", "13:30"], ["13:40", "14:20"], ["14:30", "15:10"], ["15:20", "16:00"], ["16:10", "16:50"]]
       : [["08:50", "09:35"], ["09:45", "10:30"], ["10:40", "11:25"], ["11:35", "12:20"], ["13:10", "13:55"], ["14:05", "14:50"], ["15:00", "15:45"], ["15:55", "16:40"], ["16:50", "17:35"]];
   T.defaultRooms = (level) =>
     (level === "elem"
@@ -616,21 +631,26 @@ window.TT_CONFIG = {
   T.newSchedule = (id, name, level = "elem", from) => from
     ? { ...T.clone(from), id, name }
     : { id, name, periods: level === "elem" ? 6 : 7, lunchAfter: 4, times: T.defaultTimes(level).map(([s, e]) => ({ s, e })) };
-  /* 학년군 기본 시정 (초등): 요일별 교시 수 dayP = { 요일: 교시 수 }
-     1·2학년 하루(화) 5교시·나머지 4교시 / 3·4학년 하루(목) 6교시·나머지 5교시 / 5·6학년 하루(수) 5교시·나머지 6교시 */
+  /* 학년군 기본 시정 (초등) — 2026 대전신계초 통합 시정표(2026. 3. 1.) 기준
+     1·2학년: 3교시 뒤 점심(11:30~12:10), 화·목·금 5교시 / 월·수 4교시
+     3·4학년: 3교시 뒤 점심(11:30~12:10), 화 6교시 / 나머지 5교시
+     5·6학년: 4교시 뒤 점심(12:10~12:50), 수 5교시 / 나머지 6교시
+     → 4교시는 1~4학년 12:10~12:50, 5·6학년 11:30~12:10 으로 시각이 다름 */
+  const TM = (a) => a.map(([s0, e0]) => ({ s: s0, e: e0 }));
   T.GRADE_PRESET = [
-    { id: "g12", name: "1·2학년", grades: [1, 2], periods: 5, base: 4, day: 2, n: 5 },
-    { id: "g34", name: "3·4학년", grades: [3, 4], periods: 6, base: 5, day: 4, n: 6 },
-    { id: "g56", name: "5·6학년", grades: [5, 6], periods: 6, base: 6, day: 3, n: 5 },
+    { id: "g12", name: "1·2학년", grades: [1, 2], periods: 5, lunchAfter: 3, lunch: { s: "11:30", e: "12:10" },
+      times: TM([["09:00", "09:40"], ["09:50", "10:30"], ["10:40", "11:20"], ["12:10", "12:50"], ["12:50", "13:30"]]), dayP: { 1: 4, 2: 5, 3: 4, 4: 5, 5: 5, 6: 4 } },
+    { id: "g34", name: "3·4학년", grades: [3, 4], periods: 6, lunchAfter: 3, lunch: { s: "11:30", e: "12:10" },
+      times: TM([["09:00", "09:40"], ["09:50", "10:30"], ["10:40", "11:20"], ["12:10", "12:50"], ["12:50", "13:30"], ["13:40", "14:20"]]), dayP: { 1: 5, 2: 6, 3: 5, 4: 5, 5: 5, 6: 5 } },
+    { id: "g56", name: "5·6학년", grades: [5, 6], periods: 6, lunchAfter: 4, lunch: { s: "12:10", e: "12:50" },
+      times: TM([["09:00", "09:40"], ["09:50", "10:30"], ["10:40", "11:20"], ["11:30", "12:10"], ["12:50", "13:30"], ["13:40", "14:20"]]), dayP: { 1: 6, 2: 6, 3: 5, 4: 6, 5: 6, 6: 6 } },
   ];
   T.gradePreset = (level, times) => {
     if (level !== "elem") return { schedules: [{ id: "base", name: "기본 시정", periods: 7, lunchAfter: 4, times: T.clone(times) }], gradeSched: {} };
     const gs = {};
     const schedules = T.GRADE_PRESET.map((x) => {
-      const dayP = {};
-      [1, 2, 3, 4, 5, 6].forEach((d) => (dayP[d] = d === x.day ? x.n : x.base));
       x.grades.forEach((g) => (gs[g] = x.id));
-      return { id: x.id, name: x.name, periods: x.periods, lunchAfter: 4, times: T.clone(times).slice(0, x.periods), dayP };
+      return { id: x.id, name: x.name, periods: x.periods, lunchAfter: x.lunchAfter, lunch: { ...x.lunch }, times: T.clone(x.times), dayP: { ...x.dayP } };
     });
     return { schedules, gradeSched: gs };
   };
@@ -687,6 +707,39 @@ window.TT_CONFIG = {
   T.schedOfClass = (sc, cls) => T.schedOfGrade(sc, T.gradeOf(cls));
   T.usedScheds = (sc) => [...new Set(T.gradeList(sc).map(({ g }) => T.schedOfGrade(sc, g)))];
   T.multiSched = (sc) => T.usedScheds(sc).length > 1;
+  // 한 사람이 들어가는 학급들의 시정 (없으면 학교 전체)
+  T.personScheds = (sc, idx, pid) => {
+    const all = T.usedScheds(sc);
+    const its = (idx && idx.byPerson && idx.byPerson[pid]) || {};
+    const set = new Set();
+    Object.values(its).forEach((v) => (Array.isArray(v) ? v : [v]).forEach((it) => it && it.cls && set.add(T.schedOfClass(sc, it.cls))));
+    const mine = all.filter((x) => set.has(x));
+    return mine.length ? mine : all;
+  };
+  // 이 교시가 시정마다 시각이 다르거나, 어떤 시정은 점심 바로 뒤라서 헷갈리는지
+  T.periodVaries = (scheds, p) => {
+    const xs = (scheds || []).filter((x) => p <= x.periods);
+    if (xs.length < 2) return false;
+    const tk = new Set(xs.map((x) => { const v = (x.times || [])[p - 1] || {}; return (v.s || "") + "-" + (v.e || ""); }));
+    const lb = new Set(xs.map((x) => Number(x.lunchAfter) === p - 1));
+    return tk.size > 1 || lb.size > 1;
+  };
+  // 학년 묶음 이름: [1,2,3,4] → "1~4학년", [5,6] → "5·6학년"
+  T.gradesLabel = (gs) => {
+    const a = [...new Set(gs)].sort((x, y) => x - y);
+    if (!a.length) return "";
+    const runs = []; a.forEach((g) => { const r = runs[runs.length - 1]; if (r && g === r[1] + 1) r[1] = g; else runs.push([g, g]); });
+    return runs.map(([x, y]) => (x === y ? `${x}` : y === x + 1 ? `${x}·${y}` : `${x}~${y}`)).join("·") + "학년";
+  };
+  T.schedGrades = (sc, sch) => T.gradeList(sc).map(({ g }) => g).filter((g) => T.schedOfGrade(sc, g) === sch);
+  // 사람 시간표 교시 칸에 적을 시각 줄: [{ label, s, e }] (시정마다 다르면 여러 줄)
+  T.periodHead = (sc, scheds, p) => {
+    const xs = (scheds || []).filter((x) => p <= x.periods);
+    const groups = new Map();
+    xs.forEach((x) => { const v = (x.times || [])[p - 1]; if (!v || !v.s) return; const k = v.s + "~" + v.e; const g = groups.get(k) || { s: v.s, e: v.e, gs: [] }; g.gs.push(...T.schedGrades(sc, x)); groups.set(k, g); });
+    const out = [...groups.values()].sort((a, b) => (T.toMin(a.s) || 0) - (T.toMin(b.s) || 0));
+    return out.map((g) => ({ label: out.length > 1 ? T.gradesLabel(g.gs) : "", s: g.s, e: g.e }));
+  };
   T.periodList = (sc) => Array.from({ length: Number(sc.periods) || 6 }, (_, i) => i + 1);
   T.periodsOf = (sc, cls) => T.schedOfClass(sc, cls).periods;
   // 요일별 교시 수: 그 학년 시정표의 dayP (없으면 하루 교시 수 그대로)
@@ -1115,7 +1168,6 @@ window.TT_CONFIG = {
     );
     // 학년별 시정: 1·2학년은 점심이 빠르고 5교시까지
     // 1·2학년은 점심이 빠름 (학년군 기본 시정은 newSchool에서 만들어짐)
-    sc.schedules[0].times = [["09:00", "09:40"], ["09:50", "10:30"], ["10:50", "11:30"], ["11:40", "12:10"], ["13:00", "13:40"]].map(([s, e]) => ({ s, e }));
     // 교과전담 배정 (학년 × 과목 → 담당 · 주당 시수)
     sc.assign = [
       { id: "a1", g: 3, s: "eng", pid: "pe1", h: 2 }, { id: "a2", g: 4, s: "eng", pid: "pe1", h: 2 }, { id: "a3", g: 5, s: "eng", pid: "pe1", h: 3 },
@@ -1422,11 +1474,39 @@ window.TT_CONFIG = {
   const E = T.esc;
 
   // 한 칸 기본 내용 (조회·출력)
-  T.cellContent = (sc, kind, id, items) => {
+  // 사람 시간표: 시정마다 시각이 다른 교시면 "5·6학년 기준 11:30~12:10"
+  T.schedNote = (sc, it, scheds) => {
+    if (!it || !it.cls || !T.periodVaries(scheds, it.p)) return "";
+    const x = T.schedOfClass(sc, it.cls), t = T.timeAt(sc, it.cls, it.p);
+    return `${x.name || T.gradesLabel(T.schedGrades(sc, x))} 기준${t && t.s ? ` ${t.s}~${t.e}` : ""}`;
+  };
+  // 좁은 칸(입력 화면)에서는 시각 부분을 숨길 수 있게 나눠서 그림
+  T.schedNoteHTML = (sc, it, scheds) => {
+    const n = T.schedNote(sc, it, scheds);
+    if (!n) return "";
+    const m = /^(.*?기준)(.*)$/.exec(n);
+    return `<small class="sg"><i>${E(m ? m[1] : n)}</i>${m && m[2] ? `<span>${E(m[2])}</span>` : ""}</small>`;
+  };
+  T.cellContent = (sc, kind, id, items, ctx = {}) => {
     if (!items.length) return { html: "", cls: "" };
     const units = kind === "person"
       ? [...new Map(items.map((it) => [it.b ? "b" + it.b : it.k, it])).values()].map((m) => ({ main: m, joins: [], block: m.b }))
       : kind === "class" ? T.units(items) : T.units(items);
+    const pScheds = kind === "person" ? ctx.scheds || T.usedScheds(sc) : null;
+    // 같은 교시라도 시정이 달라 시각이 안 겹치면 (예: 5·6학년 4교시 11:30, 3·4학년 4교시 12:10) 나눠서 보여 줌
+    if (kind === "person" && units.length > 1) {
+      const sps = units.map((u) => T.span(sc, u.main.cls, u.main.p));
+      const clash = sps.some((a, i) => sps.some((b, j) => j > i && T.overlap(a, b)));
+      if (!clash) {
+        const order = units.map((u, i) => [u, sps[i]]).sort((a, b) => (a[1].s || 0) - (b[1].s || 0));
+        return { cls: "split", html: order.map(([u]) => {
+          const it = u.main;
+          const what = it.b ? T.blockName(sc, it.b) : T.subjectShort(sc, it.s);
+          const note = T.schedNoteHTML(sc, it, pScheds) || (() => { const t = T.timeAt(sc, it.cls, it.p); return t ? `<small class="sg"><span>${E(t.s)}~${E(t.e)}</span></small>` : ""; })();
+          return `<div class="half" style="${T.colorVars(T.subjectColor(sc, it.s))}"><b>${E(it.cls)} ${E(what)}</b>${note}</div>`;
+        }).join("") };
+      }
+    }
     if (units.length > 1 && !(kind === "room" && !String(id).startsWith("hr:") && T.room(sc, id)?.multi)) {
       const lines = units.map((u) => {
         const it = u.main;
@@ -1438,7 +1518,7 @@ window.TT_CONFIG = {
     const u = units[0], it = u.main;
     const style = T.colorVars(T.subjectColor(sc, it.s));
     const subj = T.subjectShort(sc, it.s);
-    const time = () => { if (!T.multiSched(sc)) return ""; const t = T.timeAt(sc, it.cls, it.p); return t ? `${t.s}~${t.e}` : ""; };
+    const time = () => "";
     let main = "", subs = [];
     if (u.block) {
       const bk = (sc.blocks || []).find((x) => x.id === u.block) || {};
@@ -1463,7 +1543,8 @@ window.TT_CONFIG = {
     }
     subs = subs.filter(Boolean);
     const tg = typeof tag !== "undefined" && tag ? `<i class="tag">${E(tag)}</i>` : "";
-    return { html: `<b>${E(main)}${tg}</b>${subs.map((x) => `<small>${E(x)}</small>`).join("")}`, cls: u.joins.length ? "co" : "", style };
+    const sg = kind === "person" ? T.schedNoteHTML(sc, it, pScheds) : "";
+    return { html: `<b>${E(main)}${tg}</b>${subs.map((x) => `<small>${E(x)}</small>`).join("")}${sg}`, cls: u.joins.length ? "co" : "", style };
   };
 
   /* 주간 표. opts.cell(d,p) → {html, cls, style, attrs} 로 칸을 바꿀 수 있음 (입력 화면) */
@@ -1474,20 +1555,27 @@ window.TT_CONFIG = {
     const lunch = Number(sch.lunchAfter) || 0;
     const head = `<thead><tr><th class="g-corner">교시</th>${days.map((d) => `<th>${T.DAYS[d]}</th>`).join("")}</tr></thead>`;
     const clsId = kind === "class" ? id : kind === "room" && String(id).startsWith("hr:") ? id.slice(3) : null;
+    // 사람·특별실 표: 그 사람이 들어가는 학년 시정으로 교시 시각 (시정마다 다르면 줄마다 학년 표시)
+    const scheds = kind === "person" ? T.personScheds(sc, idx, id) : kind === "room" && !clsId ? T.usedScheds(sc) : null;
+    const headOf = (p) => {
+      if (opts.times === false) return "";
+      if (!scheds) { const t = (sch.times || [])[p - 1]; return t && t.s ? `<small>${E(t.s)}~${E(t.e)}</small>` : ""; }
+      return T.periodHead(sc, scheds, p).map((h) => `<small${h.label ? ' class="pt"' : ""}>${h.label ? `<i>${E(h.label.replace("학년", ""))}</i>` : ""}${E(h.s)}~${E(h.e)}</small>`).join("");
+    };
     const rows = periods.map((p) => {
-      const t = (sch.times || [])[p - 1];
       const cells = days.map((d) => {
-        const c = opts.cell ? opts.cell(d, p) : T.cellContent(sc, kind, id, T.cellItems(idx, kind, id, d, p));
+        const c = opts.cell ? opts.cell(d, p) : T.cellContent(sc, kind, id, T.cellItems(idx, kind, id, d, p), { scheds });
         const inner = c.html || c.cls ? `<div class="cell ${c.cls || ""}" style="${c.style || ""}">${c.html || ""}</div>` : "";
         const by = clsId && T.beyond(sc, clsId, d, p) ? ' class="beyond" title="이 요일은 이 교시가 없습니다"' : "";
         return `<td${by} ${c.attrs || ""}>${inner}</td>`;
       }).join("");
-      const row = `<tr><th class="g-p"><b>${p}</b>${t && t.s && opts.times !== false ? `<small>${E(t.s)}~${E(t.e)}</small>` : ""}</th>${cells}</tr>`;
+      const row = `<tr><th class="g-p"><b>${p}</b>${headOf(p)}</th>${cells}</tr>`;
       const lunchRow = lunch && p === lunch && p < periods.length
         ? `<tr class="g-lunch"><th>점심</th><td colspan="${days.length}">점심시간${(() => { const t = T.lunchTime(sch); return t ? ` ${E(t.s)}~${E(t.e)}` : ""; })()}</td></tr>` : "";
       return row + lunchRow;
     }).join("");
-    return `<table class="g">${head}<tbody>${rows}</tbody></table>`;
+    const wide = scheds && periods.some((p) => T.periodVaries(scheds, p));
+    return `<table class="g${wide ? " g-wide" : ""}">${head}<tbody>${rows}</tbody></table>`;
   };
 
   T.hoursHTML = (sc, idx, kind, id) => {
@@ -1806,18 +1894,21 @@ window.TT_CONFIG = {
   };
   const thin = { style: "thin", color: { argb: "FF9EA9A3" } };
   const box = { top: thin, left: thin, bottom: thin, right: thin };
-  const textOf = (sc, kind, id, items) => {
-    const c = T.cellContent(sc, kind, id, items);
+  const textOf = (sc, kind, id, items, scheds) => {
+    const c = T.cellContent(sc, kind, id, items, scheds ? { scheds } : {});
     if (!c.html) return { text: "", color: null };
     const div = document.createElement("div");
     div.innerHTML = c.html;
     div.querySelectorAll(".tag").forEach((t) => (t.textContent = " (" + t.textContent + ")"));
-    const parts = [...div.children].map((x) => x.textContent).filter(Boolean);
+    const parts = c.cls === "split"
+      ? [...div.children].map((h) => [...h.children].map((x) => x.textContent).filter(Boolean).join(" / "))
+      : [...div.children].map((x) => x.textContent).filter(Boolean);
     const it = items[0];
     return { text: parts.join("\n"), color: c.cls === "conflict" ? "#fde3e0" : T.COLORS[T.subjectColor(sc, it.s)].bg };
   };
   function writeGrid(ws, sc, idx, kind, id, row0, withHours) {
     const sch = T.gridSched(sc, kind, id);
+    const scheds = kind === "person" ? T.personScheds(sc, idx, id) : kind === "room" && !String(id).startsWith("hr:") ? T.usedScheds(sc) : null;
     const days = T.dayList(sc);
     ws.mergeCells(row0, 1, row0, days.length + 1);
     const t = ws.getCell(row0, 1);
@@ -1834,12 +1925,13 @@ window.TT_CONFIG = {
       r++;
       const tm = (sch.times || [])[p - 1];
       const h = ws.getCell(r, 1);
-      h.value = tm && tm.s ? `${p}교시\n${tm.s}~${tm.e}` : `${p}교시`;
+      const hl = scheds ? T.periodHead(sc, scheds, p).map((x) => (x.label ? x.label + " " : "") + `${x.s}~${x.e}`) : tm && tm.s ? [`${tm.s}~${tm.e}`] : [];
+      h.value = [`${p}교시`, ...hl].join("\n");
       h.alignment = { horizontal: "center", vertical: "middle", wrapText: true }; h.font = { bold: true, size: 10 };
       h.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFF2F5F3" } }; h.border = box;
       days.forEach((d, i) => {
         const c = ws.getCell(r, i + 2);
-        const { text, color } = textOf(sc, kind, id, T.cellItems(idx, kind, id, d, p));
+        const { text, color } = textOf(sc, kind, id, T.cellItems(idx, kind, id, d, p), scheds);
         c.value = text;
         c.alignment = { horizontal: "center", vertical: "middle", wrapText: true };
         c.border = box;
@@ -2631,11 +2723,15 @@ window.TT_CONFIG = {
     if (mine.length) {
       const blk = mine.find((i) => i.b);
       const units = [...new Map(mine.map((it) => [it.b ? "b" + it.b : it.k, it])).values()];
-      if (units.length > 1) return { cls: "mine conflict", attrs, html: `<b>겹침</b><small>${E(units.map((x) => x.cls).join(", "))}</small>` };
+      if (units.length > 1) {
+        const c = T.cellContent(s, "person", pid, mine, { scheds: T.personScheds(s, A.idx, pid) });
+        if (c.cls === "split") return { cls: "mine split", attrs: attrs + ' data-mine="1"', html: c.html };
+        return { cls: "mine conflict", attrs, html: `<b>겹침</b><small>${E(units.map((x) => x.cls).join(", "))}</small>` };
+      }
       if (blk) return { cls: "locked", style: T.colorVars(T.subjectColor(s, blk.s)), attrs, html: `<b>${E(T.blockName(s, blk.b))}</b><small>${E(blk.r ? T.roomName(s, blk.r) : "묶음 수업")}</small>` };
       const m = mine[0];
-      const t = T.multiSched(s) ? T.timeAt(s, m.cls, m.p) : null;
-      return { cls: "mine" + (m.j ? " co" : ""), style: T.colorVars(T.subjectColor(s, m.s)), attrs: attrs + ' data-mine="1"', html: `<b>${E(m.cls)}</b><small>${E(T.subjectShort(s, m.s))}${m.j ? " · 협력" : m.r ? " · " + E(T.roomName(s, m.r)) : ""}</small>${t ? `<small>${E(t.s)}~${E(t.e)}</small>` : ""}` };
+      const note = T.schedNoteHTML(s, m, T.personScheds(s, A.idx, pid));
+      return { cls: "mine" + (m.j ? " co" : ""), style: T.colorVars(T.subjectColor(s, m.s)), attrs: attrs + ' data-mine="1"', html: `<b>${E(m.cls)}</b><small>${E(T.subjectShort(s, m.s))}${m.j ? " · 협력" : m.r ? " · " + E(T.roomName(s, m.r)) : ""}</small>${note}` };
     }
     if (B) {
       if (pp > T.periodsOf(s, B)) return { cls: "busy", attrs, html: `<small>${E(B)}</small><small>${pp}교시 없음</small>` };
@@ -2714,15 +2810,19 @@ window.TT_CONFIG = {
     if (wb.erase) { if (!mine.length) return false; mine.forEach((i) => delete e[i.k]); setEntries(pid, e, [d, p]); return true; }
     const B = wb.cls, k = T.key(B, d, p);
     if (p > T.periodsOf(s, B)) { T.toast(`${B}은(는) ${p}교시가 없습니다.`, "error"); return false; }
-    if (!opt.brush && mine.length === 1 && mine[0].cls === B && e[k] && (e[k].j || (e[k].s === A.ed.subj && (e[k].r || "") === (A.ed.wroom || "")))) { delete e[k]; setEntries(pid, e, [d, p]); return true; }
+    if (!opt.brush && mine.some((i) => i.cls === B) && e[k] && (e[k].j || (e[k].s === A.ed.subj && (e[k].r || "") === (A.ed.wroom || "")))) { delete e[k]; setEntries(pid, e, [d, p]); return true; }
     const busy = T.units(T.cellItems(A.idx, "class", B, d, p)).filter((u) => u.main.pid !== pid);
-    const others = (it) => mine.includes(it);
+    // 같은 교시라도 시정이 달라 시각이 안 겹치는 내 수업은 그대로 둠 (예: 5·6학년 4교시 11:30 + 3·4학년 4교시 12:10)
+    const spB = T.span(s, B, p);
+    const clash = mine.filter((i) => i.cls === B || T.overlap(spB, i.sp || T.span(s, i.cls, i.p)));
+    const keep = mine.filter((i) => !clash.includes(i));
+    const others = (it) => clash.includes(it);
     if (busy.length) {
       const o = busy[0].main;
       if (A.ed.join && !busy[0].block) {
         const pb = T.personBusy(s, A.idx, pid, B, d, p, others);
         if (pb) { T.toast(`이 시간에 이미 ${pb.cls} 수업이 있습니다.`, "error"); return false; }
-        mine.forEach((i) => delete e[i.k]);
+        clash.forEach((i) => delete e[i.k]);
         e[k] = { s: o.s, r: o.r || "", j: 1 };
         setEntries(pid, e, [d, p]);
         T.toast(`${B} ${T.subjectName(s, o.s)}(${T.personName(s, o.pid)})에 함께 들어갑니다.`);
@@ -2740,9 +2840,10 @@ window.TT_CONFIG = {
       if (rb) { T.toast(`${T.roomName(s, A.ed.wroom)}은(는) 이 시간에 ${rb.cls}이(가) 씁니다.`, "error"); return false; }
     }
     if (!opt.force && T.beyond(s, B, d, p)) return askBeyond(s, B, d, p, () => cellClick(d, p, { ...opt, force: true }));
-    mine.forEach((i) => delete e[i.k]);
+    clash.forEach((i) => delete e[i.k]);
     e[k] = { s: A.ed.subj, r: A.ed.wroom || "" };
     setEntries(pid, e, [d, p]);
+    if (keep.length) { const t = T.timeAt(s, B, p), t2 = T.timeAt(s, keep[0].cls, p); T.toast(`${T.DAYS[d]} ${p}교시: ${keep[0].cls}(${t2 ? t2.s : ""})와 ${B}(${t ? t.s : ""})는 시정이 달라 둘 다 넣었습니다.`); }
     return true;
   }
   // 넣은 칸 끌어서 옮기기 — 내가 넣은 다른 칸에 놓으면 두 칸을 서로 바꿈
@@ -3816,10 +3917,10 @@ window.TT_CONFIG = {
     "set-day": (el) => { const d = draft(), x = Number(el.dataset.v); d.days = d.days.includes(x) ? d.days.filter((y) => y !== x) : [...d.days, x].sort(); markDirty(); render(); },
     "sched-preset": async () => {
       const d = draft();
-      const desc = T.GRADE_PRESET.map((x) => `${x.name}: ${T.DAYS[x.day]}요일 ${x.n}교시, 나머지 ${x.base}교시`).join("\n");
-      if (!(await T.confirm(`학년군 시정표 세 개를 만들고 학년마다 지정할까요?\n${desc}\n(교시 시각은 첫 시정표 것을 씁니다. 요일은 나중에 바꿀 수 있습니다.)`, { ok: "만들기" }))) return;
-      const times = (d.schedules[0] && d.schedules[0].times && d.schedules[0].times.length >= 6) ? d.schedules[0].times : T.defaultTimes("elem").map(([s0, e0]) => ({ s: s0, e: e0 }));
-      const pre = T.gradePreset("elem", times);
+      const days = T.dayList(d);
+      const desc = T.GRADE_PRESET.map((x) => `${x.name}: 점심 ${x.lunch.s}~${x.lunch.e} (${x.lunchAfter}교시 뒤), ${T.dayPSummary(x, days)}`).join("\n");
+      if (!(await T.confirm(`학년군 시정표 세 개를 기본 시각으로 만들고 학년마다 지정할까요?\n${desc}\n(같은 이름의 시정표는 덮어씁니다. 시각·요일은 나중에 바꿀 수 있습니다.)`, { ok: "만들기" }))) return;
+      const pre = T.gradePreset("elem");
       pre.schedules.forEach((x) => { const i = d.schedules.findIndex((y) => y.id === x.id); if (i >= 0) d.schedules[i] = x; else d.schedules.push(x); });
       Object.assign(d.gradeSched, pre.gradeSched);
       markDirty(); render();
