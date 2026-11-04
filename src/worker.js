@@ -25,6 +25,18 @@ const ADMIN = "_admin";
 const REGISTRY = "_registry";
 const norm = (v) => String(v || "").toLowerCase().replace(/[\s·.\-_()]/g, "");
 
+function diffEntries(a, b) {
+  a = a || {}; b = b || {}; const out = { add: 0, del: 0, chg: 0, keys: [] };
+  new Set([...Object.keys(a), ...Object.keys(b)]).forEach((k) => {
+    const x = a[k], y = b[k];
+    if (!x && y) { out.add++; out.keys.push(["+", k, y.s || ""]); }
+    else if (x && !y) { out.del++; out.keys.push(["-", k, x.s || ""]); }
+    else if (x && y && (x.s !== y.s || (x.r || "") !== (y.r || "") || !!x.j !== !!y.j)) { out.chg++; out.keys.push(["~", k, y.s || ""]); }
+  });
+  out.keys = out.keys.slice(0, 40);
+  return out;
+}
+
 export default {
   async fetch(req, env) {
     const url = new URL(req.url);
@@ -106,8 +118,10 @@ export class SchoolDO extends DurableObject {
       CREATE TABLE IF NOT EXISTS locks (pid TEXT PRIMARY KEY, salt TEXT NOT NULL, h TEXT NOT NULL);
       CREATE TABLE IF NOT EXISTS slots (pid TEXT PRIMARY KEY, e TEXT NOT NULL, at INTEGER NOT NULL);
       CREATE TABLE IF NOT EXISTS sessions (token TEXT PRIMARY KEY, pid TEXT NOT NULL, lh TEXT NOT NULL, at INTEGER NOT NULL);
-      CREATE TABLE IF NOT EXISTS fails (k TEXT PRIMARY KEY, n INTEGER NOT NULL, first INTEGER NOT NULL, until INTEGER NOT NULL);`);
+      CREATE TABLE IF NOT EXISTS fails (k TEXT PRIMARY KEY, n INTEGER NOT NULL, first INTEGER NOT NULL, until INTEGER NOT NULL);
+      CREATE TABLE IF NOT EXISTS changes (id INTEGER PRIMARY KEY AUTOINCREMENT, at INTEGER NOT NULL, pid TEXT NOT NULL, by TEXT NOT NULL, d TEXT NOT NULL);`);
   }
+  ensureChanges() { this.sql.exec("CREATE TABLE IF NOT EXISTS changes (id INTEGER PRIMARY KEY AUTOINCREMENT, at INTEGER NOT NULL, pid TEXT NOT NULL, by TEXT NOT NULL, d TEXT NOT NULL)"); }
   kvGet(k) { const r = this.sql.exec("SELECT v FROM kv WHERE k=?", k).toArray()[0]; return r ? JSON.parse(r.v) : null; }
   kvSet(k, v) { this.sql.exec("INSERT INTO kv (k, v) VALUES (?, ?) ON CONFLICT(k) DO UPDATE SET v=excluded.v", k, JSON.stringify(v)); }
   allSlots() {
@@ -327,9 +341,25 @@ export class SchoolDO extends DurableObject {
         const e = this.cleanEntries(body.e);
         if (!e) return fail(400, "bad", "시간표 자료가 올바르지 않습니다.");
         const at = Date.now();
+        // 변경 기록: 누가(본인/관리자) 몇 칸을 더하고·빼고·바꿨는지 (최근 500건)
+        try {
+          this.ensureChanges();
+          const old = [...this.sql.exec("SELECT e FROM slots WHERE pid=?", pid)][0];
+          const df = diffEntries(old ? JSON.parse(old.e) : {}, e);
+          if (df.add + df.del + df.chg) {
+            this.sql.exec("INSERT INTO changes (at, pid, by, d) VALUES (?, ?, ?, ?)", at, pid, me.has(pid) ? pid : ADMIN, JSON.stringify(df));
+            this.sql.exec("DELETE FROM changes WHERE id <= (SELECT MAX(id) - 500 FROM changes)");
+          }
+        } catch (err) {}
         this.sql.exec("INSERT INTO slots (pid, e, at) VALUES (?, ?, ?) ON CONFLICT(pid) DO UPDATE SET e=excluded.e, at=excluded.at", pid, JSON.stringify(e), at);
         this.broadcast({ t: "slots", pid, e, at });
         return json({ ok: true });
+      }
+      if (path === "/changes" && method === "GET") {
+        if (!admin) return fail(403, "denied", "관리자만 볼 수 있습니다.");
+        this.ensureChanges();
+        const out = [...this.sql.exec("SELECT at, pid, by, d FROM changes ORDER BY id DESC LIMIT 200")].map((r) => ({ at: r.at, pid: r.pid, by: r.by, ...JSON.parse(r.d) }));
+        return json({ changes: out });
       }
 
       // 선생님이 자기 기본 교실을 정함 (학교 설정 중 자기 줄의 room 하나만)
