@@ -316,7 +316,10 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: var(--b
 
 /* 인쇄: 출력용 종이만 */
 #print-root { display: none; }
+/* 인쇄할 때도 칸 색·음영 그대로 (브라우저 기본값은 배경색을 빼고 인쇄) */
+#print-root, #print-root *, .page, .page * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; color-adjust: exact !important; }
 @media print {
+  html, body { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
   body.printing > *:not(#print-root) { display: none !important; }
   body.printing #print-root { display: block; }
   body.printing #print-root .page { break-after: page; page-break-after: always; }
@@ -851,6 +854,7 @@ tr.drop-below td { box-shadow: inset 0 -3px 0 var(--brand); }
 @media (max-width: 640px) {
   .g.g-compact.g-k-person .cell small:first-of-type { white-space: normal; overflow: visible; text-overflow: clip; font-size: .62rem; line-height: 1.15; word-break: keep-all; }
 }
+.print-opts .seg:not(.seg-2) { display: flex; width: 100%; } .print-opts .seg:not(.seg-2) button { flex: 1; white-space: nowrap; }
 
 </style>
 </head>
@@ -889,9 +893,11 @@ window.TT_CONFIG = {
  * build.py가 이 값을 서버(cloudflare/src/version.js)에도 똑같이 넣어, 화면과 서버 버전이 늘 같습니다. */
 (function () {
   const T = (window.TT = window.TT || {});
-  T.VERSION = "1.24.1";
+  T.VERSION = "1.24.3";
   T.RELEASED = "2026-11-04";
   T.CHANGES = [
+    ["1.24.3", "2026-11-04", ["바로 인쇄: 칸 색·음영이 빠지던 문제 고침 (브라우저가 배경색을 빼고 인쇄하지 않도록)"]],
+    ["1.24.2", "2026-11-04", ["출력: 용지에 1:1(정사각형) 추가 — PDF·JPG·인쇄 모두", "출력: '교시 시각 표시' 끄고 켜기"]],
     ["1.24.1", "2026-11-04", ["출력: 학년 이름(예: 1학년)을 누르면 그 학년 학급을 한꺼번에 고르기/풀기, 교사·강사별은 직위 이름으로 한꺼번에", "학급 고르기 줄: 학급이 많아도 학년 이름 옆에 이어서 줄바꿈"]],
     ["1.24.0", "2026-11-04", ["휴대폰: 시정표 화면 넘침 고침, 단추 묶음이 세로로 찌그러지지 않게, 머리 부분 얇게", "휴대폰: 작은 단추를 누르기 쉽게(36~38px), 선생님·교담 배정·장소 표는 카드로", "휴대폰: 알림을 맨 아래 얇게", "휴대폰: 교사 주간 입력·조회도 월~금 한 화면"]],
     ["1.23.1", "2026-11-04", ["교담 없는 시간 찾기: 여러 학년 함께 (예: 5·6학년 모든 반이 함께 비는 시간) · 학년별 따로도"]],
@@ -2185,6 +2191,7 @@ window.TT_CONFIG = {
     const rowList = trows || periods.map((p) => ({ p, t: null }));
     const headOf = (r) => {
       if (opts.times === false) return "";
+      if (opts.timeText === false) return trows && r.label ? `<small class="pt"><i>${E(r.label)}</i></small>` : "";
       if (trows) return r.s ? `<small${r.label ? ' class="pt"' : ""}>${r.label ? `<i>${E(r.label)}</i>` : ""}${E(r.s)}~${E(r.e)}</small>` : "";
       if (!scheds) { const t = (sch.times || [])[r.p - 1]; return t && t.s ? `<small>${E(t.s)}~${E(t.e)}</small>` : ""; }
       const h = T.periodHead(sc, scheds, r.p)[0];
@@ -2200,7 +2207,7 @@ window.TT_CONFIG = {
       }).join("");
       const row = `<tr${r.t != null ? ' class="g-split"' : ""}><th class="g-p"><b>${p}</b>${headOf(r)}</th>${cells}</tr>`;
       const lunchRow = !trows && lunch && p === lunch && p < periods.length
-        ? `<tr class="g-lunch"><th>점심</th><td colspan="${days.length}">점심시간${(() => { const t = T.lunchTime(sch); return t ? ` ${E(t.s)}~${E(t.e)}` : ""; })()}</td></tr>` : "";
+        ? `<tr class="g-lunch"><th>점심</th><td colspan="${days.length}">점심시간${opts.timeText === false ? "" : (() => { const t = T.lunchTime(sch); return t ? ` ${E(t.s)}~${E(t.e)}` : ""; })()}</td></tr>` : "";
       // 중간놀이 등 (학급 표)
       const brkRows = !trows && p < periods.length ? (sch.breaks || []).filter((b) => Number(b.after) === p).map((b) => `<tr class="g-brk"><th>${E(b.name)}</th><td colspan="${days.length}">${E(b.name)}${b.s && b.e ? ` ${E(b.s)}~${E(b.e)}` : ""}</td></tr>`).join("") : "";
       return row + (Number(lunch) === p && brkRows ? lunchRow + brkRows : brkRows + lunchRow);
@@ -2324,7 +2331,7 @@ window.TT_CONFIG = {
   };
 
   /* ───── 출력용 종이 ───── */
-  T.PAPER = { landscape: { w: 1123, h: 794, label: "A4 가로", mm: [297, 210] }, portrait: { w: 794, h: 1123, label: "A4 세로", mm: [210, 297] } };
+  T.PAPER = { landscape: { w: 1123, h: 794, label: "A4 가로", mm: [297, 210] }, portrait: { w: 794, h: 1123, label: "A4 세로", mm: [210, 297] }, square: { w: 960, h: 960, label: "1:1", mm: [210, 210] } };
   T.termLabel = (sc) => `${sc.year ? sc.year + "학년도 " : ""}${sc.term || ""}`.trim();
 
   const pageWrap = (sc, P, title, kicker, body, bodyStyle = "", foot = "") => `
@@ -2366,10 +2373,10 @@ window.TT_CONFIG = {
     const rowH = gridH / (T.periodList(sc).length + 1 + (Number(sc.lunchAfter) ? 0.7 : 0));
     return rowH >= fs * 3.5 ? 3 : rowH >= fs * 2.5 ? 2 : 1;
   };
-  const unitHTML = (sc, idx, kind, id, fs, withHours, lines = 3) => `
+  const unitHTML = (sc, idx, kind, id, fs, withHours, lines = 3, timeText = true) => `
     <div class="unit l${lines}" style="--g-fs:${fs}px;--u-fs:${(fs * 1.2).toFixed(1)}px;--g-pw:${Math.round(fs * 4.2)}px">
       <div class="unit-title"><span>${E(T.titleOf(sc, kind, id))}</span><small>${E(T.subtitleOf(sc, kind, id))}</small></div>
-      <div class="g-box">${T.gridHTML(sc, idx, kind, id, { times: fs >= 10 })}</div>
+      <div class="g-box">${T.gridHTML(sc, idx, kind, id, { timeText })}</div>
       ${withHours ? T.colorLegendHTML(sc, idx, kind, id) || T.hoursHTML(sc, idx, kind, id) : ""}
     </div>`;
 
@@ -2389,7 +2396,7 @@ window.TT_CONFIG = {
         const chunk = job.ids.slice(i, i + per);
         const f = per === 1 ? Math.min(16, fs * 1.1) : fs;
         const lines = linesFor(sc, P, lay.rows, f, job.hours !== false);
-        const body = chunk.map((id) => unitHTML(sc, idx, job.type, id, f, job.hours !== false, lines)).join("");
+        const body = chunk.map((id) => unitHTML(sc, idx, job.type, id, f, job.hours !== false, lines, job.times !== false)).join("");
         const title = per === 1 ? T.titleOf(sc, job.type, chunk[0]) + " 시간표" : kindName[job.type];
         pages.push(pageWrap(sc, P, title, per === 1 ? kindName[job.type] : `한 장에 ${per}개`, per === 1 ? body.replace('class="unit-title"', 'class="unit-title" hidden') : body,
           `grid-template-columns:repeat(${lay.cols},minmax(0,1fr));grid-template-rows:repeat(${lay.rows},minmax(0,1fr))`,
@@ -2407,7 +2414,7 @@ window.TT_CONFIG = {
         const lay = T.arrange(ids.length, job.orient);
         const fs = fsFor(lay.cols, lay.rows, job.orient);
         const lines = linesFor(sc, P, lay.rows, fs, job.hours !== false);
-        const body = ids.map((id) => unitHTML(sc, idx, "class", id, fs, job.hours !== false, lines)).join("");
+        const body = ids.map((id) => unitHTML(sc, idx, "class", id, fs, job.hours !== false, lines, job.times !== false)).join("");
         pages.push(pageWrap(sc, P, `${g}학년 시간표`, "학년별 시간표", body,
           `grid-template-columns:repeat(${lay.cols},minmax(0,1fr));grid-template-rows:repeat(${lay.rows},minmax(0,1fr))`));
       });
@@ -2419,7 +2426,7 @@ window.TT_CONFIG = {
     } else if (job.type === "all") {
       const basis = job.basis || "class";
       const rows = T.matrixRows(sc, basis, basis === "room" ? { special: job.roomSpecial ? true : undefined } : {});
-      const perPage = job.orient === "landscape" ? 26 : 42;
+      const perPage = job.orient === "landscape" ? 26 : job.orient === "square" ? 32 : 42;
       const nPages = Math.max(1, Math.ceil(rows.length / perPage));
       const each = Math.ceil(rows.length / nPages);
       const name = { class: "전체 시간표 (학급 기준)", person: "전체 시간표 (교사·강사 기준)", room: "전체 시간표 (교실 기준)" }[basis];
@@ -2529,9 +2536,10 @@ window.TT_CONFIG = {
     const canvases = await renderPages(pagesHtml, onProgress);
     await T.loadScript(LIBS.jspdf);
     const [mw, mh] = T.PAPER[orient].mm;
-    const pdf = new window.jspdf.jsPDF({ orientation: orient, unit: "mm", format: "a4" });
+    const fmt = orient === "square" ? [mw, mh] : "a4", ori = orient === "square" ? "portrait" : orient;
+    const pdf = new window.jspdf.jsPDF({ orientation: ori, unit: "mm", format: fmt });
     canvases.forEach((c, i) => {
-      if (i) pdf.addPage("a4", orient);
+      if (i) pdf.addPage(fmt, ori);
       pdf.addImage(c.toDataURL("image/jpeg", 0.92), "JPEG", 0, 0, mw, mh);
     });
     return T.saveFile(pdf.output("blob"), filename + ".pdf");
@@ -2554,7 +2562,7 @@ window.TT_CONFIG = {
     [...root.children].forEach((el, i) => T.numberPage(el, i, pagesHtml.length));
     let st = document.getElementById("print-page-style");
     if (!st) { st = document.createElement("style"); st.id = "print-page-style"; document.head.appendChild(st); }
-    st.textContent = `@page { size: A4 ${orient}; margin: 0; } @media print { #print-root .page { width: ${T.PAPER[orient].mm[0]}mm !important; height: ${T.PAPER[orient].mm[1] - 0.5}mm !important; } }`;
+    st.textContent = `@page { size: ${orient === "square" ? "210mm 210mm" : "A4 " + orient}; margin: 0; } @media print { #print-root .page { width: ${T.PAPER[orient].mm[0]}mm !important; height: ${T.PAPER[orient].mm[1] - 0.5}mm !important; } }`;
     document.body.classList.add("printing");
     const done = () => { document.body.classList.remove("printing"); root.innerHTML = ""; window.removeEventListener("afterprint", done); };
     window.addEventListener("afterprint", done);
@@ -2694,7 +2702,7 @@ window.TT_CONFIG = {
     const wb = new window.ExcelJS.Workbook();
     wb.creator = "함께 짜는 시간표";
     const setup = (ws, fit = true) => {
-      ws.pageSetup = { paperSize: 9, orientation: job.orient || "landscape", fitToPage: fit, fitToWidth: 1, fitToHeight: fit ? 1 : 0, margins: { left: 0.3, right: 0.3, top: 0.4, bottom: 0.4, header: 0.2, footer: 0.2 } };
+      ws.pageSetup = { paperSize: 9, orientation: job.orient === "portrait" ? "portrait" : "landscape", fitToPage: fit, fitToWidth: 1, fitToHeight: fit ? 1 : 0, margins: { left: 0.3, right: 0.3, top: 0.4, bottom: 0.4, header: 0.2, footer: 0.2 } };
     };
     const gridSheet = (ws) => { ws.getColumn(1).width = 12; T.dayList(sc).forEach((_, i) => (ws.getColumn(i + 2).width = 18)); };
     if (["class", "person", "room"].includes(job.type)) {
@@ -2827,7 +2835,7 @@ window.TT_CONFIG = {
     tab: "view",
     view: { kind: "class", id: null, mx: "class", mxGrade: 0 },
     ed: { actAs: null, mode: null, cls: null, brush: null, room: "", subj: "", wroom: "", wbrush: null, forActor: null },
-    pr: { type: "class", ids: {}, grades: null, orient: "landscape", perPage: 1, basis: "class", gradeStyle: "grid", hours: true },
+    pr: { type: "class", ids: {}, grades: null, orient: "landscape", perPage: 1, basis: "class", gradeStyle: "grid", hours: true, times: true },
     set: { draft: null, dirty: false, sec: "basic", codes: null, codesFor: null },
     pending: {}, timers: {}, saveState: "", unsub: null,
   };
@@ -3769,7 +3777,7 @@ window.TT_CONFIG = {
     const s = sc(), pr = A.pr;
     if (!pr.grades) pr.grades = T.gradeList(s).map((x) => x.g);
     pr.grades = pr.grades.filter((g) => T.gradeList(s).some((x) => x.g === g));
-    const job = { type: pr.type, orient: pr.orient, perPage: pr.perPage, basis: pr.basis, gradeStyle: pr.gradeStyle, hours: pr.hours, color: pr.color || "subject", grades: pr.grades.slice().sort(), freeEach: !!pr.freeEach };
+    const job = { type: pr.type, orient: pr.orient, perPage: pr.perPage, basis: pr.basis, gradeStyle: pr.gradeStyle, hours: pr.hours, times: pr.times !== false, color: pr.color || "subject", grades: pr.grades.slice().sort(), freeEach: !!pr.freeEach };
     if (["class", "person", "room"].includes(pr.type)) job.ids = sortIds(pr.type, prIds(pr.type));
     return job;
   }
@@ -3780,7 +3788,7 @@ window.TT_CONFIG = {
     if (job.ids && job.ids.length === 1) x = "_" + T.titleOf(s, job.type, job.ids[0]).replace(/\s+/g, "");
     if (job.type === "grade" && job.grades.length === 1) x = `_${job.grades[0]}학년`;
     if (job.type === "all") x = "_" + { class: "학급기준", person: "교사기준", room: "교실기준" }[job.basis];
-    return `${s.name}_${t}시간표${x}_${job.orient === "landscape" ? "가로" : "세로"}`.replace(/[\\/:*?"<>|]/g, "");
+    return `${s.name}_${t}시간표${x}_${{ landscape: "가로", portrait: "세로", square: "1대1" }[job.orient] || "가로"}`.replace(/[\\/:*?"<>|]/g, "");
   };
 
   function printTab() {
@@ -3800,6 +3808,7 @@ window.TT_CONFIG = {
     const perPage = ["class", "person", "room"].includes(pr.type)
       ? `<b>한 장에</b>${seg([[1, "1개"], [2, "2개"], [4, "4개"], [6, "6개"]], pr.perPage, "pr-per")}` : "";
     const hoursOpt = pr.type !== "all" && pr.type !== "free" && !(pr.type === "grade" && pr.gradeStyle === "matrix") ? `<label class="check"><input type="checkbox" data-on="pr-hours" ${pr.hours ? "checked" : ""}><span>과목별 시수 함께 출력</span></label>` : "";
+    const timesOpt = ["class", "person", "room", "grade"].includes(pr.type) && !(pr.type === "grade" && pr.gradeStyle === "matrix") ? `<label class="check"><input type="checkbox" data-on="pr-times" ${pr.times !== false ? "checked" : ""}><span>교시 시각 표시 <small class="muted">(예: 09:00~09:40)</small></span></label>` : "";
     const pages = T.buildPages(s, A.idx, job);
     const MAXPV = 12;
     const P = T.PAPER[pr.orient];
@@ -3809,11 +3818,11 @@ window.TT_CONFIG = {
         <h2 class="h2">출력</h2>
         <b>무엇을</b><div class="chips">${types.map(([k, l]) => `<button class="chip ${pr.type === k ? "on" : ""}" data-act="pr-type" data-v="${k}">${l}</button>`).join("")}</div>
         ${target}
-        <b>용지</b>${seg([["landscape", "A4 가로"], ["portrait", "A4 세로"]], pr.orient, "pr-orient")}
+        <b>용지</b>${seg([["landscape", "A4 가로"], ["portrait", "A4 세로"], ["square", "1:1"]], pr.orient, "pr-orient")}
         ${perPage}
         ${pr.type === "free" ? "" : `<b>칸 색</b>`}${pr.type === "free" ? "" : seg(T.COLOR_BY, pr.color || "subject", "pr-color").replace('class="seg"', 'class="seg seg-2"')}
         ${pr.type === "free" ? "" : `<p class="hint pr-color-hint">${{ subject: "같은 과목은 같은 색", class: "같은 학급은 같은 색 (교사·교실 시간표에서 보기 좋음)", person: "같은 선생님·강사는 같은 색 (학급 시간표에서 누가 들어오는지 한눈에)", none: "색 없이 테두리만 — 흑백 인쇄용" }[pr.color || "subject"]}</p>`}
-        ${hoursOpt}
+        ${hoursOpt}${timesOpt}
         <div class="stack" style="gap:8px;padding-top:6px;border-top:1px solid var(--line)">
           <button class="btn primary" data-act="export" data-kind="pdf" ${pages.length ? "" : "disabled"}>PDF 저장 <small>(${pages.length}쪽)</small></button>
           <button class="btn" data-act="export" data-kind="jpg" ${pages.length ? "" : "disabled"}>JPG 저장${pages.length > 1 ? " <small>(묶음 zip)</small>" : ""}</button>
@@ -5572,6 +5581,7 @@ window.TT_CONFIG = {
     if (on === "ed-wroom") { A.ed.wroom = el.value; render(); }
     if (on === "my-room" && e.type === "change") setMyRoom(actor(), el.value);
     if (on === "pr-hours") { A.pr.hours = el.checked; render(); }
+    if (on === "pr-times") { A.pr.times = el.checked; render(); }
     if (on === "hro" && e.type === "change") { const d = draft(); d.homeroomOpen = el.value !== "0"; d.finalized = el.value === "2"; markDirty(); }
     if (on === "subj-hours") {
       const d = draft(), x = d.subjects[Number(el.dataset.i)], gs = String(el.dataset.gs || "").split(",").map(Number).filter(Boolean);
