@@ -517,6 +517,50 @@ tr.drop-below td { box-shadow: inset 0 -3px 0 var(--brand); }
 .school-bar .stage.s1 b { background: #2b2100; color: var(--chalk); }
 .school-bar .stage.s2 { background: #ffffff; color: #0a5c47; }
 .school-bar .stage.s2 b { background: #0a5c47; color: #fff; }
+/* 지우기 단추 */
+.btn.danger-ghost { background: transparent; border-color: color-mix(in srgb, var(--danger) 45%, var(--line)); color: var(--danger); }
+.btn.danger-ghost:hover:not(:disabled) { background: var(--danger-bg); border-color: var(--danger); }
+.btn.danger-ghost small { font-weight: 400; opacity: 0.8; }
+.stack-sm { display: flex; flex-direction: column; gap: 6px; align-items: stretch; }
+.clear-grid { display: grid; gap: 8px; }
+.clear-grid .clr { display: grid; grid-template-columns: 110px minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 8px 10px; border-radius: 10px; background: var(--surface); border: 1px solid var(--line); }
+.clear-grid .clr select { min-width: 0; }
+@media (max-width: 560px) { .clear-grid .clr { grid-template-columns: 1fr; } }
+/* 직위 */
+.chip.on-soft { cursor: default; background: var(--surface); }
+.chip.on-soft small { color: var(--muted); }
+.title-add input { flex: 1 1 200px; min-width: 0; }
+.title-add select { flex: 0 1 auto; width: auto; }
+/* 시정표 자동 만들기 · 순서대로 시정 */
+.sched-gen { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; padding: 10px 12px; border-radius: 10px; background: color-mix(in srgb, var(--brand) 7%, var(--surface)); border: 1px solid color-mix(in srgb, var(--brand) 30%, var(--line)); }
+.sched-gen label { display: inline-flex; align-items: center; gap: 6px; font-weight: 600; font-size: 0.92rem; }
+.sched-gen input[type="time"] { width: auto; min-height: 36px; }
+.sched-gen .numf { width: 116px; }
+.sched-gen .hint { flex-basis: 100%; }
+.tbl.times.seq { max-width: 520px; }
+.tbl.times.seq th { text-align: left; white-space: nowrap; }
+.tbl.times.seq tr.lunch th, .tbl.times.seq tr.lunch td { background: color-mix(in srgb, var(--chalk) 28%, var(--surface)); }
+.tbl.times.seq tr.lunch th b { color: #6b4b00; }
+:root[data-theme="dark"] .tbl.times.seq tr.lunch th b { color: var(--chalk); }
+.tbl.times.seq tr.lunch input { border-color: color-mix(in srgb, var(--chalk) 70%, var(--line)); }
+/* 과목: 학년군 → 과목 */
+.subj-grp { padding-top: 0; padding-bottom: 0; overflow: hidden; }
+.subj-grp-head { display: flex; align-items: center; gap: 10px; width: calc(100% + 40px); margin: 0 -20px; padding: 14px 20px; background: none; border: 0; font: inherit; color: var(--ink); cursor: pointer; text-align: left; flex-wrap: wrap; }
+.subj-grp-head:hover { background: var(--shade); }
+.subj-grp-head b { font-size: 1.05rem; }
+.subj-grp-head .caret { width: 1em; color: var(--brand); font-size: 1.1em; }
+.subj-peek { display: flex; flex-wrap: wrap; gap: 4px; margin-left: auto; }
+.subj-peek i { font-style: normal; font-size: 0.78rem; padding: 1px 7px; border-radius: 999px; background: var(--c-bg); color: var(--c-ink); border: 1px solid var(--c-line); }
+.subj-grp.open { padding-bottom: 16px; }
+.subj-grp.open .subj-peek { display: none; }
+.subj-grp .subj-list { margin: 4px 0 10px; }
+.g-toggles .gt:not(.mine-g) { opacity: 0.55; }
+.g-toggles .gt.mine-g { font-weight: 800; }
+.hours.legend span { font-weight: 600; }
+.seg.seg-2 { display: grid; grid-template-columns: 1fr 1fr; }
+.seg.seg-2 button { border-left: 0; white-space: nowrap; }
+.seg.seg-2 button:nth-child(even) { border-left: 1px solid var(--line); }
+.seg.seg-2 button:nth-child(n + 3) { border-top: 1px solid var(--line); }
 
 </style>
 </head>
@@ -555,9 +599,11 @@ window.TT_CONFIG = {
  * build.py가 이 값을 서버(cloudflare/src/version.js)에도 똑같이 넣어, 화면과 서버 버전이 늘 같습니다. */
 (function () {
   const T = (window.TT = window.TT || {});
-  T.VERSION = "1.12.0";
+  T.VERSION = "1.14.0";
   T.RELEASED = "2026-11-04";
   T.CHANGES = [
+    ["1.14.0", "2026-11-04", ["출력할 때 칸 색 고르기: 과목별 · 학급별 · 선생님·강사별 · 색 없음(흑백)", "학급별·선생님별 색이면 아래에 범례 (PDF·JPG·인쇄·엑셀 모두)"]],
+    ["1.13.0", "2026-11-04", ["과목을 학년군 → 과목으로 묶어 펼치고 접기", "시정표: 수업·쉬는 시간·점심 분을 넣으면 자동으로 만들기", "시정표를 1교시 → 점심 → … 순서대로, 점심 줄은 색으로", "직위: 담임교사·교과전담·스포츠강사·영어전문회화강사 + 직접 추가", "학급·선생님 시간표에서 지우기 단추를 잘 보이게", "관리자: 학급·학년·선생님·교과전담·강사·전체 시간표 지우기 (지울 시간 수를 먼저 보여 줌)"]],
     ["1.12.0", "2026-11-04", ["새 학교는 최고관리자 코드(서버 비밀값 SUPER_CODE)로만 만들기", "학교 이름 옆에 지금 단계(1단계 교과전담·강사 / 2단계 담임) 크게 표시, 새 학교는 1단계로 시작", "기본설정 '학급'과 '시정표' 메뉴 분리", "요일별 교시를 격자 칸 눌러 켜고 끄기", "학교를 처음 만들면 기본 정보 → 학급 → 시정표 → 과목 → 장소 → 선생님 → 교과전담 배정 순서로 안내"]],
     ["1.11.0", "2026-11-04", ["교사·강사·특별실 시간표: 학년마다 시각이 다른 교시는 두 줄로 (4교시 5·6학년 11:30 → 4교시 1~4학년 12:10), 시간 순서대로", "교과전담·강사는 점심시간(11:30~12:50) 중 한 시간은 꼭 비움 — 자동 배치·직접 입력·옮기기 모두", "칸 안의 '○학년 기준' 표시는 없앰"]],
     ["1.10.0", "2026-11-04", ["학년군 기본 시정을 학교 통합 시정표(2026. 3. 1.)대로: 1~4학년 3교시 뒤 점심 11:30~12:10, 5·6학년 4교시 뒤 점심 12:10~12:50", "교사·강사 시간표에 학년별 교시 시각 표시 (4교시 1~4학년 12:10, 5·6학년 11:30 등)", "시정이 다른 교시에는 칸마다 '3·4학년 기준 12:10~12:50'처럼 표시", "같은 교시라도 시각이 안 겹치면 두 학급 수업을 함께 넣고 나눠서 보여 줌"]],
@@ -584,6 +630,17 @@ window.TT_CONFIG = {
 
   T.DAYS = ["", "월", "화", "수", "목", "금", "토"];
   T.ROLES = { homeroom: "담임", subject: "교과전담", instructor: "강사" };
+  /* 직위: 기본 4개 + 학교에서 더 만든 것(sc.titles). role(담임·교과전담·강사)은 입력 방식을 정함 */
+  T.TITLES_BASE = [
+    { id: "hr", name: "담임교사", short: "담임", role: "homeroom" },
+    { id: "sub", name: "교과전담", short: "교과전담", role: "subject" },
+    { id: "spo", name: "스포츠강사", short: "스포츠강사", role: "instructor" },
+    { id: "eng", name: "영어전문회화강사", short: "영전강", role: "instructor" },
+  ];
+  T.TITLE_DEFAULT = { homeroom: "hr", subject: "sub", instructor: "spo" };
+  T.posList = (sc) => [...T.TITLES_BASE, ...((sc && sc.titles) || []).filter((t) => t && t.id && t.name)];
+  T.posIdOf = (sc, p) => (p && p.title && T.posList(sc).some((t) => t.id === p.title && t.role === p.role) ? p.title : T.TITLE_DEFAULT[(p && p.role) || "subject"]);
+  T.posOf = (sc, p) => T.posList(sc).find((t) => t.id === T.posIdOf(sc, p)) || T.TITLES_BASE[1];
   T.ROLE_ORDER = ["homeroom", "subject", "instructor"];
 
   // 과목 색 (방과후 시간표와 같은 12색)
@@ -603,9 +660,29 @@ window.TT_CONFIG = {
   };
   T.COLOR_KEYS = Object.keys(T.COLORS);
   T.colorVars = (key) => {
+    if (key === "none") return "--c-bg:transparent;--c-line:#9ea9a3;--c-ink:inherit";
     const c = T.COLORS[key] || T.COLORS.gray;
     return `--c-bg:${c.bg};--c-line:${c.line};--c-ink:${c.ink}`;
   };
+  /* 칸 색 정하는 기준 (출력에서 고름): subject 과목별 · class 학급별 · person 선생님별 · none 흑백 */
+  T.colorBy = "subject";
+  T.COLOR_BY = [["subject", "과목별"], ["class", "학급별"], ["person", "선생님·강사별"], ["none", "색 없음(흑백)"]];
+  T.itemColor = (sc, it) => {
+    const by = T.colorBy;
+    if (!it) return "gray";
+    if (by === "none") return "none";
+    if (by === "class") { const i = T.classList(sc).findIndex((c) => c.id === it.cls); return T.COLOR_KEYS[(i < 0 ? 0 : i) % T.COLOR_KEYS.length]; }
+    if (by === "person") {
+      // 담임은 회색, 교과전담·강사는 서로 다른 색 (한 학급 시간표에서 누가 들어오는지 한눈에)
+      const p = T.person(sc, it.pid);
+      if (!p || p.role === "homeroom") return "gray";
+      const keys = T.COLOR_KEYS.filter((k) => k !== "gray");
+      const i = (sc.people || []).filter((x) => x.role !== "homeroom").findIndex((x) => x.id === it.pid);
+      return keys[(i < 0 ? 0 : i) % keys.length];
+    }
+    return T.subjectColor(sc, it.s);
+  };
+  T.withColorBy = (by, fn) => { const prev = T.colorBy; T.colorBy = by || "subject"; try { return fn(); } finally { T.colorBy = prev; } };
 
   /* ───── 문자열 ───── */
   T.esc = (v) => String(v ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
@@ -655,7 +732,7 @@ window.TT_CONFIG = {
   T.subjectsForGrade = (sc, g) => (sc.subjects || []).filter((x) => T.forGrade(x, g));
   T.subjectRoom = (sc, id) => { const x = T.subject(sc, id); return x && x.room && (T.room(sc, x.room)) ? x.room : ""; };
   // 칸 옆에 작게 붙이는 담당 표시 (교과전담·강사)
-  T.roleTag = (sc, pid) => { const p = T.person(sc, pid); return p && p.role === "subject" ? "교과전담" : p && p.role === "instructor" ? "강사" : ""; };
+  T.roleTag = (sc, pid) => { const p = T.person(sc, pid); if (!p || p.role === "homeroom") return ""; const t = T.posOf(sc, p); return t.short || t.name; };
   T.defaultTimes = (level) =>
     level === "elem"
       ? [["09:00", "09:40"], ["09:50", "10:30"], ["10:40", "11:20"], ["11:30", "12:10"], ["12:50", "13:30"], ["13:40", "14:20"], ["14:30", "15:10"], ["15:20", "16:00"], ["16:10", "16:50"]]
@@ -872,7 +949,7 @@ window.TT_CONFIG = {
     if (!p) return "";
     if (p.role === "homeroom") return p.cls ? `${T.className(p.cls)} 담임` : "담임";
     const subj = p.subject ? T.subjectName(sc, p.subject) + " " : "";
-    return `${subj}${T.ROLES[p.role] || ""}`.trim();
+    return `${subj}${T.posOf(sc, p).name}`.trim();
   };
   T.homeroomOf = (sc, cls) => (sc.people || []).find((p) => p.role === "homeroom" && p.cls === cls) || null;
   T.peopleSorted = (sc) => {
@@ -1592,7 +1669,7 @@ window.TT_CONFIG = {
           const it = u.main;
           const what = it.b ? T.blockName(sc, it.b) : T.subjectShort(sc, it.s);
           const note = T.schedNoteHTML(sc, it, pScheds) || (() => { const t = T.timeAt(sc, it.cls, it.p); return t ? `<small class="sg"><span>${E(t.s)}~${E(t.e)}</span></small>` : ""; })();
-          return `<div class="half" style="${T.colorVars(T.subjectColor(sc, it.s))}"><b>${E(it.cls)} ${E(what)}</b>${note}</div>`;
+          return `<div class="half" style="${T.colorVars(T.itemColor(sc, it))}"><b>${E(it.cls)} ${E(what)}</b>${note}</div>`;
         }).join("") };
       }
     }
@@ -1605,7 +1682,7 @@ window.TT_CONFIG = {
       return { html: `<b>겹침</b>${lines.map((l) => `<small>${E(l)}</small>`).join("")}`, cls: "conflict" };
     }
     const u = units[0], it = u.main;
-    const style = T.colorVars(T.subjectColor(sc, it.s));
+    const style = T.colorVars(T.itemColor(sc, it));
     const subj = T.subjectShort(sc, it.s);
     const time = () => "";
     let main = "", subs = [];
@@ -1671,6 +1748,18 @@ window.TT_CONFIG = {
     return `<table class="g${trows ? " g-wide" : ""}">${head}<tbody>${rows}</tbody></table>`;
   };
 
+  // 학급별·선생님별 색일 때 범례
+  T.colorLegendHTML = (sc, idx, kind, id) => {
+    if (T.colorBy !== "class" && T.colorBy !== "person") return "";
+    const seen = new Map();
+    T.dayList(sc).forEach((d) => T.periodList(sc).forEach((p) => T.cellItems(idx, kind, id, d, p).forEach((it) => {
+      const k = T.colorBy === "class" ? it.cls : it.pid;
+      if (k && !seen.has(k)) seen.set(k, it);
+    })));
+    if (seen.size < 2) return "";
+    const lab = (k) => (T.colorBy === "class" ? k : T.personName(sc, k));
+    return `<div class="hours legend">${[...seen.entries()].map(([k, it]) => `<span style="${T.colorVars(T.itemColor(sc, it))}"><i></i>${E(lab(k))}</span>`).join("")}</div>`;
+  };
   T.hoursHTML = (sc, idx, kind, id) => {
     const h = T.hoursBy(idx, kind, id);
     if (!h.total) return "";
@@ -1699,7 +1788,7 @@ window.TT_CONFIG = {
     }
     if (kind === "person") {
       return T.peopleSorted(sc).filter((p) => !filter.roles || filter.roles.includes(p.role))
-        .map((p) => ({ id: p.id, label: T.personName(sc, p.id), sub: p.role === "homeroom" ? p.cls || "" : T.ROLES[p.role], group: p.role }));
+        .map((p) => ({ id: p.id, label: T.personName(sc, p.id), sub: p.role === "homeroom" ? p.cls || "" : T.posOf(sc, p).short || T.posOf(sc, p).name, group: p.role }));
     }
     return T.roomList(sc).filter((r) => (filter.special === undefined ? true : r.special === filter.special))
       .map((r) => ({ id: r.id, label: r.name, sub: "", group: r.special ? "s" : "h" }));
@@ -1722,7 +1811,7 @@ window.TT_CONFIG = {
         const multiOk = kind === "room" && !r.id.startsWith("hr:") && T.room(sc, r.id)?.multi;
         if (units.length > 1 && !multiOk) return `<td class="${c1} x" title="겹침">!</td>`;
         const it = units[0];
-        const style = T.colorVars(T.subjectColor(sc, it.s));
+        const style = T.colorVars(T.itemColor(sc, it));
         const bname = it.b ? T.blockName(sc, it.b) : "";
         let txt = "", sub = "";
         if (kind === "class") { txt = it.b ? bname.replace(/^\d학년\s*/, "") : T.subjectShort(sc, it.s); }
@@ -1783,12 +1872,13 @@ window.TT_CONFIG = {
     <div class="unit l${lines}" style="--g-fs:${fs}px;--u-fs:${(fs * 1.2).toFixed(1)}px;--g-pw:${Math.round(fs * 4.2)}px">
       <div class="unit-title"><span>${E(T.titleOf(sc, kind, id))}</span><small>${E(T.subtitleOf(sc, kind, id))}</small></div>
       <div class="g-box">${T.gridHTML(sc, idx, kind, id, { times: fs >= 10 })}</div>
-      ${withHours ? T.hoursHTML(sc, idx, kind, id) : ""}
+      ${withHours ? T.colorLegendHTML(sc, idx, kind, id) || T.hoursHTML(sc, idx, kind, id) : ""}
     </div>`;
 
   /* 출력 작업 → 종이 HTML 목록
      job: { type: 'class'|'person'|'room'|'grade'|'all', ids:[], grades:[], orient, perPage, basis, hours } */
-  T.buildPages = (sc, idx, job) => {
+  T.buildPages = (sc, idx, job) => T.withColorBy(job.color, () => buildPages0(sc, idx, job));
+  const buildPages0 = (sc, idx, job) => {
     const P = T.PAPER[job.orient] || T.PAPER.landscape;
     const pages = [];
     const term = T.termLabel(sc);
@@ -1997,7 +2087,7 @@ window.TT_CONFIG = {
       ? [...div.children].map((h) => [...h.children].map((x) => x.textContent).filter(Boolean).join(" / "))
       : [...div.children].map((x) => x.textContent).filter(Boolean);
     const it = items[0];
-    return { text: parts.join("\n"), color: c.cls === "conflict" ? "#fde3e0" : T.COLORS[T.subjectColor(sc, it.s)].bg };
+    return { text: parts.join("\n"), color: c.cls === "conflict" ? "#fde3e0" : (T.itemColor(sc, it) === "none" ? null : T.COLORS[T.itemColor(sc, it)].bg) };
   };
   function writeGrid(ws, sc, idx, kind, id, row0, withHours) {
     const sch = T.gridSched(sc, kind, id);
@@ -2083,7 +2173,7 @@ window.TT_CONFIG = {
         const it = items[0];
         const name = it.b ? T.blockName(sc, it.b) : T.subjectShort(sc, it.s);
         x.value = kind === "class" ? name : kind === "person" ? (it.b ? name : `${it.cls}\n${name}`) : `${it.cls}\n${name}`;
-        x.fill = { type: "pattern", pattern: "solid", fgColor: { argb: argb(T.COLORS[T.subjectColor(sc, it.s)].bg) } };
+        x.fill = { type: "pattern", pattern: "solid", fgColor: { argb: argb(T.COLORS[T.itemColor(sc, it) === "none" ? "gray" : T.itemColor(sc, it)].bg) } };
         x.font = { size: 9 };
       }));
       ws.getRow(r).height = kind === "class" ? 22 : 30;
@@ -2093,6 +2183,10 @@ window.TT_CONFIG = {
   }
   T.exportXLSX = async (sc, idx, job, filename) => {
     await T.loadScript(LIBS.exceljs);
+    const prevColor = T.colorBy; T.colorBy = job.color || "subject";
+    try { return await exportXLSX0(sc, idx, job, filename); } finally { T.colorBy = prevColor; }
+  };
+  const exportXLSX0 = async (sc, idx, job, filename) => {
     const wb = new window.ExcelJS.Workbook();
     wb.creator = "함께 짜는 시간표";
     const setup = (ws, fit = true) => {
@@ -2579,7 +2673,9 @@ window.TT_CONFIG = {
       content = v.id ? `<div class="sheet-card">
           <div class="row-between"><div><div class="sheet-title">${E(T.titleOf(s, v.kind, v.id))} 시간표</div><p class="sheet-sub">${E(T.subtitleOf(s, v.kind, v.id))}</p></div>
           <div class="btn-row">${canEditAs(editPidFor(v.kind, v.id)) ? `<button class="btn sm" data-act="to-edit">입력하러 가기</button>` : ""}
-            <button class="btn sm" data-act="to-print" data-type="${v.kind}" data-id="${E(v.id)}">출력하기</button></div></div>
+            <button class="btn sm" data-act="to-print" data-type="${v.kind}" data-id="${E(v.id)}">출력하기</button>
+            ${A.me.admin && v.kind === "class" ? `<button class="btn sm danger-ghost" data-act="clear-cls" data-id="${E(v.id)}">🗑 이 학급 시간표 지우기</button>` : ""}
+            ${A.me.admin && v.kind === "person" ? `<button class="btn sm danger-ghost" data-act="clear-person" data-id="${E(v.id)}">🗑 이 선생님 시간표 지우기</button>` : ""}</div></div>
           <div class="g-scroll">${T.gridHTML(s, A.idx, v.kind, v.id)}</div>
           ${T.hoursHTML(s, A.idx, v.kind, v.id) || `<p class="hint">아직 입력된 시간이 없습니다.</p>`}
         </div>` : `<p class="empty">표시할 항목이 없습니다. 기본설정을 먼저 해 주세요.</p>`;
@@ -2749,8 +2845,9 @@ window.TT_CONFIG = {
         <aside class="side">
           <div class="panel"><h3 class="h3">${E(cls)} 과목별 시수</h3>${T.hoursHTML(s, A.idx, "class", cls) || '<p class="hint">아직 없음</p>'}</div>
           ${asg.length ? `<div class="panel"><h3 class="h3">${g}학년 교과전담</h3><ul class="mini-list">${asg.map(({ a, done }) => `<li><span>${E(T.subjectName(s, a.s))} <span class="hint">${E(T.personName(s, a.pid))}</span></span><b class="${done >= a.h ? "ok" : "warn"}">${done}/${a.h}</b></li>`).join("")}</ul></div>` : ""}
-          <div class="panel"><h3 class="h3">내가 넣은 시간</h3><p class="muted">이 학급 ${countMine(pid, cls)}시간 · 전체 ${countMine(pid)}시간</p>
-            <button class="btn sm ghost" data-act="clear-mine" data-cls="${E(cls)}">이 학급에 넣은 내 시간 지우기</button></div>
+          <div class="panel"><h3 class="h3">지우기</h3><p class="muted">내가 넣은 시간: 이 학급 ${countMine(pid, cls)}시간 · 전체 ${countMine(pid)}시간</p>
+            <div class="stack-sm"><button class="btn sm danger-ghost" data-act="clear-mine" data-cls="${E(cls)}" ${countMine(pid, cls) ? "" : "disabled"}>🗑 ${E(cls)}에 넣은 내 시간 모두 지우기</button>
+            ${A.me.admin ? `<button class="btn sm danger-ghost" data-act="clear-cls" data-id="${E(cls)}">🗑 ${E(cls)} 시간표 모두 지우기 <small>(모든 선생님·관리자)</small></button>` : ""}</div></div>
         </aside>
       </div>`;
   }
@@ -2816,7 +2913,7 @@ window.TT_CONFIG = {
           <div class="panel"><h3 class="h3">내 수업 시수</h3><p class="muted">주 <b>${h.total}</b>시간</p>
             ${Object.keys(mineBy).length ? `<ul class="mini-list">${Object.keys(mineBy).sort((a, b) => T.clsKey(a) - T.clsKey(b)).map((c) => `<li><span>${E(c)}</span><b>${mineBy[c]}</b></li>`).join("")}</ul>` : '<p class="hint">아직 없음</p>'}
             ${T.hoursHTML(s, A.idx, "person", pid)}</div>
-          <div class="panel"><button class="btn sm ghost" data-act="clear-mine">내 시간표 모두 지우기</button></div>
+          <div class="panel"><h3 class="h3">지우기</h3><button class="btn sm danger-ghost" data-act="clear-mine" ${h.total ? "" : "disabled"}>🗑 내 시간표 모두 지우기</button></div>
         </aside>
       </div>`;
   }
@@ -3037,7 +3134,7 @@ window.TT_CONFIG = {
     const s = sc(), pr = A.pr;
     if (!pr.grades) pr.grades = T.gradeList(s).map((x) => x.g);
     pr.grades = pr.grades.filter((g) => T.gradeList(s).some((x) => x.g === g));
-    const job = { type: pr.type, orient: pr.orient, perPage: pr.perPage, basis: pr.basis, gradeStyle: pr.gradeStyle, hours: pr.hours, grades: pr.grades.slice().sort() };
+    const job = { type: pr.type, orient: pr.orient, perPage: pr.perPage, basis: pr.basis, gradeStyle: pr.gradeStyle, hours: pr.hours, color: pr.color || "subject", grades: pr.grades.slice().sort() };
     if (["class", "person", "room"].includes(pr.type)) job.ids = sortIds(pr.type, prIds(pr.type));
     return job;
   }
@@ -3075,7 +3172,10 @@ window.TT_CONFIG = {
         <b>무엇을</b><div class="chips">${types.map(([k, l]) => `<button class="chip ${pr.type === k ? "on" : ""}" data-act="pr-type" data-v="${k}">${l}</button>`).join("")}</div>
         ${target}
         <b>용지</b>${seg([["landscape", "A4 가로"], ["portrait", "A4 세로"]], pr.orient, "pr-orient")}
-        ${perPage}${hoursOpt}
+        ${perPage}
+        <b>칸 색</b>${seg(T.COLOR_BY, pr.color || "subject", "pr-color").replace('class="seg"', 'class="seg seg-2"')}
+        <p class="hint pr-color-hint">${{ subject: "같은 과목은 같은 색", class: "같은 학급은 같은 색 (교사·교실 시간표에서 보기 좋음)", person: "같은 선생님·강사는 같은 색 (학급 시간표에서 누가 들어오는지 한눈에)", none: "색 없이 테두리만 — 흑백 인쇄용" }[pr.color || "subject"]}</p>
+        ${hoursOpt}
         <div class="stack" style="gap:8px;padding-top:6px;border-top:1px solid var(--line)">
           <button class="btn primary" data-act="export" data-kind="pdf" ${pages.length ? "" : "disabled"}>PDF 저장 <small>(${pages.length}쪽)</small></button>
           <button class="btn" data-act="export" data-kind="jpg" ${pages.length ? "" : "disabled"}>JPG 저장${pages.length > 1 ? " <small>(묶음 zip)</small>" : ""}</button>
@@ -3236,19 +3336,29 @@ window.TT_CONFIG = {
           <label class="field"><span>점심시간 위치</span><select data-s="schedules.${i}.lunchAfter" data-num="1" data-structural="1"><option value="0">표시 안 함</option>${Array.from({ length: x.periods - 1 }, (_, k) => `<option value="${k + 1}" ${x.lunchAfter === k + 1 ? "selected" : ""}>${k + 1}교시 뒤</option>`).join("")}</select></label>
         </div>
         <div class="btn-row"><button class="btn sm" data-act="sched-copy" data-i="${i}">복사해서 새 시정표</button>${d.schedules.length > 1 ? `<button class="btn sm ghost" data-act="sched-del" data-i="${i}">지우기</button>` : ""}</div></div>
-        ${x.lunchAfter ? (() => { const lt = T.lunchTime(x) || { s: "", e: "" }; const l = x.lunch || {}; return `<div class="lunch-row"><b>🍚 점심시간</b> <span class="hint">${x.lunchAfter}교시 뒤</span>
-          <label>시작 <input type="time" data-s="schedules.${i}.lunch.s" data-f="l${i}s" value="${E(l.s || "")}" placeholder="${E(lt.s)}"></label>
-          <label>끝 <input type="time" data-s="schedules.${i}.lunch.e" data-f="l${i}e" value="${E(l.e || "")}" placeholder="${E(lt.e)}"></label>
-          <span class="hint">${l.s || l.e ? "" : lt.s ? `비워 두면 ${E(lt.s)}~${E(lt.e)} (앞뒤 교시 시각)` : "시각을 넣으면 시간표에 함께 나옵니다"}</span></div>`; })() : ""}
+        <div class="sched-gen"><b>⚡ 자동으로 만들기</b>
+          <label>1교시 시작 <input type="time" data-s="schedules.${i}.gen.start" data-f="g${i}st" value="${E((x.gen && x.gen.start) || (x.times[0] && x.times[0].s) || "09:00")}"></label>
+          <label>수업 ${numf(`data-s="schedules.${i}.gen.lesson" data-num="1" data-f="g${i}l"`, (x.gen && x.gen.lesson) || 40, 10, 120)}분</label>
+          <label>쉬는 시간 ${numf(`data-s="schedules.${i}.gen.brk" data-num="1" data-f="g${i}b"`, (x.gen && x.gen.brk) ?? 10, 0, 60)}분</label>
+          <label>점심 ${numf(`data-s="schedules.${i}.gen.lunch" data-num="1" data-f="g${i}u"`, (x.gen && x.gen.lunch) || 40, 0, 120)}분</label>
+          <button class="btn sm primary" data-act="sched-gen" data-i="${i}">시정표 만들기</button>
+          <span class="hint">점심은 '점심시간 위치' 교시 뒤에 들어갑니다. 만든 뒤 아래에서 시각을 고칠 수 있습니다.</span></div>
         <div class="dayp"><div class="dayp-head"><b>요일별 교시</b><span class="hint">칸을 눌러 켜고 끕니다 · ${T.dayPSummary(x, T.dayList(d))}</span></div>
           <table class="dayp-grid"><thead><tr><th></th>${T.dayList(d).map((dd) => `<th>${T.DAYS[dd]}</th>`).join("")}</tr></thead><tbody>
           ${Array.from({ length: x.periods }, (_, k) => k + 1).map((pp) => `<tr><th>${pp}교시</th>${T.dayList(d).map((dd) => { const on = pp <= T.dayPeriodsOf(x, dd); return `<td><button type="button" class="dp ${on ? "on" : ""}" data-act="dayp-cell" data-i="${i}" data-d="${dd}" data-p="${pp}" aria-pressed="${on}" aria-label="${T.DAYS[dd]}요일 ${pp}교시">${on ? pp : ""}</button></td>`; }).join("")}</tr>`).join("")}
           </tbody></table></div>
         <p class="hint">쓰는 학년: ${used.length ? used.map((g) => g + "학년").join(", ") : "없음"}</p>
-        <div class="tbl-wrap"><table class="tbl times"><thead><tr><th>교시</th><th>시작</th><th>끝</th><th>교시</th><th>시작</th><th>끝</th></tr></thead><tbody>
-          ${Array.from({ length: Math.ceil(x.periods / 2) }, (_, r) => `<tr>${[r, r + Math.ceil(x.periods / 2)].map((k) => k < x.periods
-            ? `<td><b>${k + 1}교시</b>${x.lunchAfter === k + 1 ? ' <small class="hint">→점심</small>' : ""}</td><td><input type="time" data-s="schedules.${i}.times.${k}.s" data-f="t${i}-${k}s" value="${E(x.times[k].s)}"></td><td><input type="time" data-s="schedules.${i}.times.${k}.e" data-f="t${i}-${k}e" value="${E(x.times[k].e)}"></td>`
-            : "<td></td><td></td><td></td>").join("")}</tr>`).join("")}
+        <div class="tbl-wrap"><table class="tbl times seq"><thead><tr><th>순서</th><th>시작</th><th>끝</th><th>시간</th></tr></thead><tbody>
+          ${(() => {
+            const mins = (a, b) => { const m = (T.toMin(b) ?? NaN) - (T.toMin(a) ?? NaN); return Number.isFinite(m) && m > 0 ? `${m}분` : ""; };
+            const lt = T.lunchTime(x) || { s: "", e: "" }, l = x.lunch || {};
+            const rows = [];
+            for (let k = 0; k < x.periods; k++) {
+              rows.push(`<tr><th><b>${k + 1}교시</b></th><td><input type="time" data-s="schedules.${i}.times.${k}.s" data-f="t${i}-${k}s" value="${E(x.times[k].s)}"></td><td><input type="time" data-s="schedules.${i}.times.${k}.e" data-f="t${i}-${k}e" value="${E(x.times[k].e)}"></td><td class="hint">${mins(x.times[k].s, x.times[k].e)}</td></tr>`);
+              if (x.lunchAfter === k + 1 && k + 1 < x.periods) rows.push(`<tr class="lunch"><th><b>🍚 점심</b></th><td><input type="time" data-s="schedules.${i}.lunch.s" data-f="l${i}s" value="${E(l.s || "")}" placeholder="${E(lt.s)}"></td><td><input type="time" data-s="schedules.${i}.lunch.e" data-f="l${i}e" value="${E(l.e || "")}" placeholder="${E(lt.e)}"></td><td class="hint">${mins(l.s || lt.s, l.e || lt.e)}${l.s || l.e ? "" : lt.s ? " · 앞뒤 교시로" : ""}</td></tr>`);
+            }
+            return rows.join("");
+          })()}
         </tbody></table></div>
         <div><button class="btn sm ghost" data-act="sched-default" data-i="${i}">기본 시각으로 채우기</button></div>
       </div>`;
@@ -3265,19 +3375,38 @@ window.TT_CONFIG = {
     const colorPick = (i, cur) => `<div class="color-pick">${T.COLOR_KEYS.map((k) => `<button type="button" class="${cur === k ? "on" : ""}" style="${T.colorVars(k)}" title="${T.COLORS[k].name}" data-act="subj-color" data-i="${i}" data-v="${k}"></button>`).join("")}</div>`;
     const roomSel = (i, cur) => `<select data-s="subjects.${i}.room" aria-label="기본 장소"><option value="">학급 교실</option>${d.rooms.map((r) => `<option value="${E(r.id)}" ${cur === r.id ? "selected" : ""}>${E(r.name || "(이름 없음)")}</option>`).join("")}</select>`;
     const on = (x, g) => !Array.isArray(x.grades) || x.grades.includes(g);
-    return `<section class="panel"><div class="row-between"><h3 class="h3">과목 (${d.subjects.length})</h3><button class="btn sm" data-act="subj-add">＋ 과목 추가</button></div>
-        <p class="hint"><b>학년</b>을 고르면 그 학년 시간표를 짤 때 그 과목만 보입니다. <b>기본 장소</b>를 정하면 그 과목을 고를 때 장소가 미리 골라집니다. ⠿ 를 끌어서 순서를 바꿉니다.</p>
-        <div class="subj-list" data-list-tbl="subjects" style="--gn:${maxG}">
-        <div class="subj-row subj-head"><span></span><span>과목 이름</span><span>약칭</span><span>학년</span><span>기본 장소</span><span></span></div>
-        ${d.subjects.map((x, i) => `<div class="subj-row" data-row="${i}" style="${T.colorVars(x.color)}">
+    const groups = d.level === "elem"
+      ? [{ k: "g12", name: "1·2학년군", gs: [1, 2] }, { k: "g34", name: "3·4학년군", gs: [3, 4] }, { k: "g56", name: "5·6학년군", gs: [5, 6] }]
+      : grades.map((g) => ({ k: "g" + g, name: g + "학년", gs: [g] }));
+    const open = (A.set.subjOpen = A.set.subjOpen || {});
+    const row = (x, i, grp) => `<div class="subj-row" data-row="${i}" style="${T.colorVars(x.color)}">
           ${dragH("subjects", i)}
           <span class="subj-name"><i class="sw"></i>${inp(`subjects.${i}.name`, x.name, 'placeholder="과목 이름"')}</span>
           ${inp(`subjects.${i}.short`, x.short, 'maxlength="4" placeholder="약칭" class="subj-short"')}
-          <span class="g-toggles">${grades.map((g) => `<button type="button" class="gt ${on(x, g) ? "on" : ""}" data-act="subj-grade" data-i="${i}" data-g="${g}" aria-pressed="${on(x, g)}">${g}</button>`).join("")}</span>
+          <span class="g-toggles">${grades.map((g) => `<button type="button" class="gt ${on(x, g) ? "on" : ""} ${grp.gs.includes(g) ? "mine-g" : ""}" data-act="subj-grade" data-i="${i}" data-g="${g}" aria-pressed="${on(x, g)}">${g}</button>`).join("")}</span>
           ${roomSel(i, x.room || "")}
-          <span class="subj-tools"><details class="color-dd"><summary title="색 바꾸기"><i class="sw"></i></summary>${colorPick(i, x.color)}</details><button class="icon-btn" data-act="subj-del" data-i="${i}" title="지우기">✕</button></span>
-        </div>`).join("")}
-        </div></section>`;
+          <span class="subj-tools"><details class="color-dd"><summary title="색 바꾸기"><i class="sw"></i></summary>${colorPick(i, x.color)}</details><button class="icon-btn" data-act="subj-out" data-i="${i}" data-gs="${grp.gs.join(",")}" title="${E(grp.name)}에서 빼기">✕</button></span>
+        </div>`;
+    const loose = d.subjects.map((x, i) => ({ x, i })).filter(({ x }) => Array.isArray(x.grades) && !x.grades.some((g) => grades.includes(g)));
+    return `<section class="panel"><div class="row-between"><h3 class="h3">과목 (${d.subjects.length})</h3>
+          <div class="btn-row"><button class="btn sm ghost" data-act="subj-open-all">모두 펼치기</button><button class="btn sm ghost" data-act="subj-close-all">모두 접기</button></div></div>
+        <p class="hint"><b>학년군 → 과목</b> 순서로 정리합니다. 학년군을 눌러 펼치고 접습니다. 한 과목을 여러 학년군에서 쓰면(예: 국어) 모든 학년군에 함께 보이고, 고치면 같이 바뀝니다. 오른쪽 <b>학년 단추</b>로 쓰는 학년을 고르고, ✕ 는 그 학년군에서만 뺍니다. ⠿ 를 끌어서 순서를 바꿉니다.</p>
+      </section>
+      ${groups.map((grp) => {
+        const items = d.subjects.map((x, i) => ({ x, i })).filter(({ x }) => grp.gs.some((g) => on(x, g)));
+        const isOpen = !!open[grp.k];
+        return `<section class="panel subj-grp ${isOpen ? "open" : ""}">
+          <button type="button" class="subj-grp-head" data-act="subj-grp" data-k="${grp.k}" aria-expanded="${isOpen}">
+            <span class="caret">${isOpen ? "▾" : "▸"}</span><b>${E(grp.name)}</b><span class="hint">${items.length}과목</span>
+            <span class="subj-peek">${items.map(({ x }) => `<i style="${T.colorVars(x.color)}">${E(x.short || x.name || "?")}</i>`).join("")}</span></button>
+          ${isOpen ? `<div class="subj-list" data-list-tbl="subjects" style="--gn:${maxG}">
+            <div class="subj-row subj-head"><span></span><span>과목 이름</span><span>약칭</span><span>학년</span><span>기본 장소</span><span></span></div>
+            ${items.map(({ x, i }) => row(x, i, grp)).join("") || `<p class="hint">이 학년군 과목이 없습니다.</p>`}
+          </div>
+          <div class="btn-row"><button class="btn sm" data-act="subj-add" data-gs="${grp.gs.join(",")}">＋ ${E(grp.name)} 과목 추가</button></div>` : ""}
+        </section>`;
+      }).join("")}
+      ${loose.length ? `<section class="panel"><h3 class="h3">학년을 고르지 않은 과목</h3><div class="subj-list" data-list-tbl="subjects" style="--gn:${maxG}">${loose.map(({ x, i }) => row(x, i, { gs: [], name: "" })).join("")}</div></section>` : ""}`;
   }
   function setRooms(d) {
     return `<section class="panel"><div class="row-between"><h3 class="h3">특별실 · 장소 (${d.rooms.length})</h3><button class="btn sm" data-act="room-add">＋ 장소 추가</button></div>
@@ -3305,12 +3434,12 @@ window.TT_CONFIG = {
     return `<section class="panel">
       <div class="row-between"><h3 class="h3">선생님 · 강사 (${d.people.length}명)</h3>
         <div class="btn-row">${missingHr ? `<button class="btn sm primary" data-act="auto-hr">담임 자리 ${missingHr}개 만들기</button>` : ""}
-          <button class="btn sm" data-act="person-add" data-role="homeroom">＋ 담임</button><button class="btn sm" data-act="person-add" data-role="subject">＋ 교과전담</button><button class="btn sm" data-act="person-add" data-role="instructor">＋ 강사</button></div></div>
+          <button class="btn sm" data-act="person-add" data-role="homeroom">＋ 담임</button><button class="btn sm" data-act="person-add" data-role="subject">＋ 교과전담</button><button class="btn sm" data-act="person-add" data-role="instructor" data-title="spo">＋ 스포츠강사</button><button class="btn sm" data-act="person-add" data-role="instructor" data-title="eng">＋ 영어전문회화강사</button></div></div>
       <p class="hint">저장하면 새 선생님마다 <b>인증코드</b>가 자동으로 만들어집니다. <b>링크</b>를 복사해 보내면 그 선생님은 누르기만 하면 바로 자기 시간표 입력 화면으로 들어옵니다(링크 안에 코드가 들어 있으니 본인에게만 보내세요).</p>
-      <div class="tbl-wrap"><table class="tbl"><thead><tr><th>이름</th><th>구분</th><th class="w-s">담임 학급</th><th>담당 과목</th><th>기본 교실</th><th>인증코드 · 링크</th><th></th></tr></thead><tbody>
+      <div class="tbl-wrap"><table class="tbl"><thead><tr><th>이름</th><th>직위</th><th class="w-s">담임 학급</th><th>담당 과목</th><th>기본 교실</th><th>인증코드 · 링크</th><th></th></tr></thead><tbody>
       ${rows.map(({ p, i }) => `<tr>
         <td>${inp(`people.${i}.name`, p.name, `placeholder="${p.role === "homeroom" && p.cls ? p.cls + " 담임" : "이름"}"`)}</td>
-        <td><select data-s="people.${i}.role" data-structural="1">${T.ROLE_ORDER.map((r) => `<option value="${r}" ${p.role === r ? "selected" : ""}>${T.ROLES[r]}</option>`).join("")}</select></td>
+        <td><select data-on="person-title" data-i="${i}" aria-label="직위">${T.posList(d).map((t) => `<option value="${E(t.id)}" ${T.posIdOf(d, p) === t.id ? "selected" : ""}>${E(t.name)}</option>`).join("")}</select></td>
         <td class="w-s">${p.role === "homeroom" ? `<select data-s="people.${i}.cls" data-structural="1">${clsOpts(p.cls)}</select>` : ""}</td>
         <td>${p.role !== "homeroom" ? `<select data-s="people.${i}.subject">${subjOpts(p.subject)}</select>` : ""}</td>
         <td>${p.role !== "homeroom" ? `<select data-s="people.${i}.room">${roomOpts(p.room)}</select>` : ""}</td>
@@ -3319,6 +3448,13 @@ window.TT_CONFIG = {
       </tbody></table></div>
       <div class="btn-row"><button class="btn" data-act="slips" ${Object.keys(codes).length ? "" : "disabled"}>인증코드 안내문 PDF (QR 포함)</button>
         <button class="btn ghost" data-act="codes-csv" ${Object.keys(codes).length ? "" : "disabled"}>코드·링크 목록 CSV</button></div>
+    </section>
+    <section class="panel"><h3 class="h3">직위</h3>
+      <p class="hint">기본 직위(담임교사·교과전담·스포츠강사·영어전문회화강사) 말고 더 필요하면 추가하세요. <b>입력 방식</b>은 담임처럼(자기 반) 또는 교과전담·강사처럼(여러 반) 중에서 고릅니다.</p>
+      <div class="chips">${T.posList(d).map((t) => `<span class="chip on-soft">${E(t.name)} <small>${E(T.ROLES[t.role])}</small>${T.TITLES_BASE.some((b) => b.id === t.id) ? "" : ` <button type="button" class="link-btn" data-act="title-del" data-id="${E(t.id)}" aria-label="${E(t.name)} 지우기">✕</button>`}</span>`).join("")}</div>
+      <div class="btn-row title-add"><input data-f="title-name" placeholder="새 직위 (예: 기간제교사, 돌봄전담사)" maxlength="16">
+        <select data-f="title-role"><option value="subject">교과전담·강사처럼 (여러 반)</option><option value="instructor">강사로 표시</option><option value="homeroom">담임처럼 (자기 반)</option></select>
+        <button class="btn sm" data-act="title-add">＋ 직위 추가</button></div>
     </section>`;
   }
   function setAssign(d) {
@@ -3374,8 +3510,14 @@ window.TT_CONFIG = {
       <section class="panel"><h3 class="h3">백업</h3><p class="hint">학교 설정과 모든 시간표를 파일 하나로 받습니다. 인증코드는 담기지 않습니다(불러온 뒤 새로 만들어짐).</p>
         <div class="btn-row"><button class="btn" data-act="backup">백업 파일 받기 (JSON)</button>
         <label class="btn ghost">백업 불러오기<input type="file" accept=".json,application/json" data-on="restore" hidden></label></div></section>
-      <section class="panel danger-zone"><h3 class="h3">새 학기 준비</h3><p class="hint">학교 설정과 선생님·인증코드는 그대로 두고, 입력된 시간표만 모두 지웁니다.</p>
-        <div><button class="btn danger" data-act="clear-all">모든 시간표 지우기</button></div></section>`;
+      <section class="panel danger-zone"><h3 class="h3">시간표 지우기</h3><p class="hint">학교 설정과 선생님·인증코드는 그대로 두고, 입력된 시간표만 지웁니다. 누르면 몇 시간이 지워지는지 먼저 보여 줍니다.</p>
+        <div class="clear-grid">
+          <div class="clr"><b>학급</b><select data-f="clr-cls">${T.classList(sc()).map((c) => `<option value="${E(c.id)}">${E(T.className(c.id))}</option>`).join("")}</select><button class="btn danger-ghost" data-act="clear-cls">이 학급 지우기</button></div>
+          <div class="clr"><b>학년</b><select data-f="clr-grade">${T.gradeList(sc()).map(({ g }) => `<option value="${g}">${g}학년</option>`).join("")}</select><button class="btn danger-ghost" data-act="clear-grade">이 학년 지우기</button></div>
+          <div class="clr"><b>선생님</b><select data-f="clr-person">${T.peopleSorted(sc()).map((p) => `<option value="${E(p.id)}">${E(T.personName(sc(), p.id))} · ${E(T.personDesc(sc(), p.id))}</option>`).join("")}</select><button class="btn danger-ghost" data-act="clear-person">이 선생님 지우기</button></div>
+          <div class="clr"><b>교과전담·강사</b><span class="hint">담임이 아닌 모든 선생님</span><button class="btn danger-ghost" data-act="clear-subject">교과전담·강사 모두 지우기</button></div>
+          <div class="clr"><b>전체</b><span class="hint">새 학기 준비</span><button class="btn danger" data-act="clear-all">모든 시간표 지우기</button></div>
+        </div></section>`;
   }
 
   function setPath(obj, path, val) {
@@ -3447,6 +3589,33 @@ window.TT_CONFIG = {
     return ok;
   }
 
+  /* 시간표 지우기 (관리자): pred(pid, {cls,d,p}, v) 가 참인 칸을 모든 선생님 시간표에서 지움 */
+  async function bulkClear(label, pred) {
+    const s = sc(), changes = {};
+    let n = 0;
+    Object.entries(A.slots || {}).forEach(([pid, doc]) => {
+      const e = { ...((doc && doc.e) || {}) };
+      let c = 0;
+      Object.keys(e).forEach((k) => { if (pred(pid, T.parseKey(k), e[k])) { delete e[k]; c++; } });
+      if (c) { changes[pid] = e; n += c; }
+    });
+    if (!n) { T.toast(`${label}: 지울 시간이 없습니다.`); return; }
+    const who = Object.keys(changes).map((pid) => T.personName(s, pid));
+    if (!(await T.confirm(`${label}\n${who.length}명(${who.slice(0, 4).join(", ")}${who.length > 4 ? " …" : ""})이 넣은 ${n}시간을 지울까요?\n되돌릴 수 없습니다. 필요하면 먼저 기본설정 → 관리 → 백업 파일을 받아 두세요.\n(묶음 수업은 기본설정 → 묶음 수업에서 지웁니다.)`, { ok: `${n}시간 지우기`, danger: true }))) return;
+    try {
+      for (const [pid, e] of Object.entries(changes)) { await store.saveSlots(A.sid, pid, e); A.slots[pid] = { ...(A.slots[pid] || {}), e }; }
+      A.idx = T.buildIndex(s, A.slots);
+      T.toast(`${label}: ${n}시간을 지웠습니다.`);
+      render();
+    } catch (err) { T.toast(err.message || "지우지 못했습니다.", "error"); }
+  }
+  const CLEAR = {
+    cls: (cls) => bulkClear(`${T.className(cls)} 시간표 지우기`, (pid, q) => q.cls === cls),
+    grade: (g) => bulkClear(`${g}학년 시간표 지우기`, (pid, q) => T.gradeOf(q.cls) === g),
+    subject: () => bulkClear("교과전담·강사 시간표 모두 지우기", (pid) => { const p = T.person(sc(), pid); return !!p && p.role !== "homeroom"; }),
+    person: (id) => bulkClear(`${T.personName(sc(), id)} 선생님 시간표 지우기`, (pid) => pid === id),
+  };
+
   async function renewCode(pid) {
     if (A.set.codes && A.set.codes[pid] && !(await T.confirm(`${T.personName(sc(), pid)} 선생님 인증코드를 새로 만들까요?\n예전 코드는 더 이상 쓸 수 없습니다.`, { ok: "새로 만들기" }))) return;
     try {
@@ -3493,7 +3662,7 @@ window.TT_CONFIG = {
   }
   function codesCsv() {
     const s = sc(), codes = A.set.codes || {};
-    const rows = [["이름", "구분", "학급/과목", "인증코드", "바로 입력 링크"], ...T.peopleSorted(s).filter((p) => codes[p.id]).map((p) => [T.personName(s, p.id), T.ROLES[p.role], p.role === "homeroom" ? p.cls : T.subjectName(s, p.subject || ""), codes[p.id], personLink(p.id, codes[p.id])])];
+    const rows = [["이름", "구분", "학급/과목", "인증코드", "바로 입력 링크"], ...T.peopleSorted(s).filter((p) => codes[p.id]).map((p) => [T.personName(s, p.id), T.posOf(s, p).name, p.role === "homeroom" ? p.cls : T.subjectName(s, p.subject || ""), codes[p.id], personLink(p.id, codes[p.id])])];
     const csv = "\ufeff" + rows.map((r) => r.map((v) => `"${String(v ?? "").replace(/"/g, '""')}"`).join(",")).join("\r\n");
     T.saveFile(new Blob([csv], { type: "text/csv" }), `${s.name}_인증코드.csv`);
   }
@@ -3941,7 +4110,8 @@ window.TT_CONFIG = {
       let at = rows.length;
       for (let i = 0; i < rows.length; i++) { const r = rows[i].getBoundingClientRect(); if (e.clientY < r.top + r.height / 2) { at = i; break; } }
       rows.forEach((r, i) => { r.classList.toggle("drop-above", i === at); r.classList.toggle("drop-below", at === rows.length && i === rows.length - 1); });
-      drag.at = at;
+      // 목록 일부만 보일 때(학년군별 과목)도 전체 목록의 자리로 바꿈
+      drag.at = rows.length ? (at < rows.length ? Number(rows[at].dataset.row) : Number(rows[rows.length - 1].dataset.row) + 1) : at;
       return;
     }
     const over = el && el.closest(".ed-grid td[data-act='cell']");
@@ -4070,6 +4240,7 @@ window.TT_CONFIG = {
       setEntries(pid, e);
     },
     "pr-type": (el) => { A.pr.type = el.dataset.v; render(); },
+    "pr-color": (el) => { A.pr.color = el.dataset.v; render(); },
     "pr-id": (el) => { const ids = prIds(A.pr.type); const i = ids.indexOf(el.dataset.id); i >= 0 ? ids.splice(i, 1) : ids.push(el.dataset.id); render(); },
     "pr-all": () => {
       const s = sc();
@@ -4099,6 +4270,25 @@ window.TT_CONFIG = {
     "set-save": (el) => saveSettings(el),
     "set-revert": () => { A.set.draft = null; A.set.dirty = false; render(); },
     "set-day": (el) => { const d = draft(), x = Number(el.dataset.v); d.days = d.days.includes(x) ? d.days.filter((y) => y !== x) : [...d.days, x].sort(); markDirty(); render(); },
+    "sched-gen": async (el) => {
+      const d = draft(), x = d.schedules[Number(el.dataset.i)]; if (!x) return;
+      const g = { start: "09:00", lesson: 40, brk: 10, lunch: 40, ...(x.gen || {}) };
+      let t = T.toMin(g.start);
+      const L = Number(g.lesson) || 40, Bk = Math.max(0, Number(g.brk) || 0), Lu = Math.max(0, Number(g.lunch) || 0);
+      if (t == null) { T.toast("1교시 시작 시각을 넣어 주세요.", "error"); return; }
+      if (x.times.some((v, k) => k < x.periods && v && v.s) && !(await T.confirm(`'${x.name}' 교시 시각을 새로 만들까요?\n수업 ${L}분 · 쉬는 시간 ${Bk}분 · 점심 ${Lu}분 (${x.lunchAfter ? x.lunchAfter + "교시 뒤" : "점심 없음"})`, { ok: "만들기" }))) return;
+      const times = [];
+      let lunch = null;
+      for (let p = 1; p <= x.periods; p++) {
+        times.push({ s: T.hm(t), e: T.hm(t + L) });
+        t += L;
+        if (x.lunchAfter === p && p < x.periods && Lu) { lunch = { s: T.hm(t), e: T.hm(t + Lu) }; t += Lu; } else t += Bk;
+      }
+      const first = times[0].s, last = times[times.length - 1].e;
+      x.times = times; x.lunch = lunch || {}; x.gen = g;
+      markDirty(); render();
+      T.toast(`${x.name}: ${first} ~ ${last}${lunch ? ` · 점심 ${lunch.s}~${lunch.e}` : ""}`);
+    },
     "sched-preset": async () => {
       const d = draft();
       const days = T.dayList(d);
@@ -4144,7 +4334,23 @@ window.TT_CONFIG = {
       catch (e) { T.modal({ title: "입력 링크", body: `<p class="hint">아래 주소를 길게 눌러 복사하세요.</p><textarea readonly style="min-height:90px">${E(url)}</textarea>` }); }
     },
     "auto-open": (el) => openAutoPlace(el.dataset.pid || null),
-    "subj-add": () => { draft().subjects.push({ id: T.uid("s"), name: "", short: "", color: T.COLOR_KEYS[draft().subjects.length % 12], room: "" }); markDirty(); render(); },
+    "subj-add": (el) => {
+      const d = draft(), gs = el.dataset.gs ? el.dataset.gs.split(",").map(Number) : null;
+      d.subjects.push({ id: T.uid("s"), name: "", short: "", color: T.COLOR_KEYS[d.subjects.length % 12], room: "", ...(gs ? { grades: gs } : {}) });
+      markDirty(); render();
+    },
+    "subj-grp": (el) => { const o = (A.set.subjOpen = A.set.subjOpen || {}); o[el.dataset.k] = !o[el.dataset.k]; render(); },
+    "subj-open-all": () => { A.set.subjOpen = { g12: 1, g34: 1, g56: 1, g1: 1, g2: 1, g3: 1 }; render(); },
+    "subj-close-all": () => { A.set.subjOpen = {}; render(); },
+    "subj-out": async (el) => {
+      const d = draft(), i = Number(el.dataset.i), x = d.subjects[i], gs = el.dataset.gs ? el.dataset.gs.split(",").map(Number) : [];
+      const all = Array.from({ length: d.level === "elem" ? 6 : 3 }, (_, k) => k + 1);
+      const left = (Array.isArray(x.grades) ? x.grades : all).filter((g) => !gs.includes(g));
+      if (left.length && gs.length) { x.grades = left; markDirty(); render(); T.toast(`${x.name || "과목"}: ${left.join("·")}학년에만 남겼습니다.`); return; }
+      const used = Object.values(A.slots).reduce((n, doc) => n + Object.values((doc && doc.e) || {}).filter((v) => v.s === x.id).length, 0);
+      if (!(await T.confirm(`'${x.name || "이름 없는 과목"}'을(를) 지울까요?${used ? `\n이 과목으로 넣은 칸이 ${used}개 있습니다.` : ""}`, { ok: "지우기", danger: true }))) return;
+      d.subjects.splice(i, 1); markDirty(); render();
+    },
     "subj-grade": (el) => {
       const d = draft(), x = d.subjects[Number(el.dataset.i)], g = Number(el.dataset.g);
       const all = Array.from({ length: d.level === "elem" ? 6 : 3 }, (_, i) => i + 1);
@@ -4163,7 +4369,24 @@ window.TT_CONFIG = {
     "subj-color": (el) => { draft().subjects[Number(el.dataset.i)].color = el.dataset.v; markDirty(); render(); },
     "room-add": () => { draft().rooms.push({ id: T.uid("r"), name: "", multi: false }); markDirty(); render(); },
     "room-del": (el) => { const d = draft(), r = d.rooms[Number(el.dataset.i)]; d.rooms.splice(Number(el.dataset.i), 1); d.subjects.forEach((x) => { if (x.room === r.id) x.room = ""; }); markDirty(); render(); },
-    "person-add": (el) => { draft().people.push({ id: T.uid("p"), name: "", role: el.dataset.role, cls: "", subject: "", room: "" }); markDirty(); render(); },
+    "person-add": (el) => { draft().people.push({ id: T.uid("p"), name: "", role: el.dataset.role, title: el.dataset.title || T.TITLE_DEFAULT[el.dataset.role], cls: "", subject: "", room: "" }); markDirty(); render(); },
+    "title-add": () => {
+      const nm = (app.querySelector('[data-f="title-name"]') || {}).value || "", role = (app.querySelector('[data-f="title-role"]') || {}).value || "subject";
+      const name = nm.trim().slice(0, 16);
+      if (!name) { T.toast("직위 이름을 넣어 주세요.", "error"); return; }
+      const d = draft();
+      if (T.posList(d).some((t) => t.name === name)) { T.toast("이미 있는 직위입니다.", "error"); return; }
+      d.titles = [...(d.titles || []), { id: T.uid("t"), name, role }];
+      markDirty(); render();
+    },
+    "title-del": async (el) => {
+      const d = draft(), t = (d.titles || []).find((x) => x.id === el.dataset.id); if (!t) return;
+      const users = d.people.filter((p) => p.title === t.id);
+      if (users.length && !(await T.confirm(`'${t.name}' 직위인 선생님 ${users.length}명은 기본 직위(${T.posList(d).find((x) => x.id === T.TITLE_DEFAULT[t.role]).name})로 바뀝니다. 지울까요?`, { ok: "지우기", danger: true }))) return;
+      users.forEach((p) => (p.title = T.TITLE_DEFAULT[p.role]));
+      d.titles = d.titles.filter((x) => x.id !== t.id);
+      markDirty(); render();
+    },
     "person-del": async (el) => {
       const d = draft(), i = Number(el.dataset.i), p = d.people[i];
       const n = Object.keys((A.slots[p.id] && A.slots[p.id].e) || {}).length;
@@ -4184,6 +4407,10 @@ window.TT_CONFIG = {
       const data = { format: "tt-backup", v: 1, sid: A.sid, savedAt: new Date().toISOString(), school: sc(), slots: A.slots };
       T.saveFile(new Blob([JSON.stringify(data, null, 1)], { type: "application/json" }), `${sc().name}_시간표_백업_${new Date().toISOString().slice(0, 10)}.json`);
     },
+    "clear-cls": (el) => { const v = el.dataset.id || (app.querySelector('[data-f="clr-cls"]') || {}).value; if (v) CLEAR.cls(v); },
+    "clear-grade": (el) => { const v = Number(el.dataset.g || (app.querySelector('[data-f="clr-grade"]') || {}).value); if (v) CLEAR.grade(v); },
+    "clear-subject": () => CLEAR.subject(),
+    "clear-person": (el) => { const v = el.dataset.id || (app.querySelector('[data-f="clr-person"]') || {}).value; if (v) CLEAR.person(v); },
     "clear-all": async () => {
       if (!(await T.confirm("입력된 시간표를 모두 지울까요? 되돌릴 수 없습니다.\n(필요하면 먼저 백업 파일을 받아 두세요.)", { ok: "모두 지우기", danger: true }))) return;
       try { await store.clearSlots(A.sid); A.slots = {}; A.idx = T.buildIndex(sc(), {}); T.toast("모두 지웠습니다."); render(); } catch (e) { T.toast(e.message, "error"); }
@@ -4258,6 +4485,13 @@ window.TT_CONFIG = {
     if (on === "my-room" && e.type === "change") setMyRoom(actor(), el.value);
     if (on === "pr-hours") { A.pr.hours = el.checked; render(); }
     if (on === "hro" && e.type === "change") { draft().homeroomOpen = el.value === "1"; markDirty(); }
+    if (on === "person-title" && e.type === "change") {
+      const d = draft(), p = d.people[Number(el.dataset.i)], t = T.posList(d).find((x) => x.id === el.value);
+      if (p && t) {
+        if (t.role !== p.role) { if (t.role === "homeroom") { p.subject = ""; p.room = ""; } else p.cls = ""; }
+        p.role = t.role; p.title = t.id; markDirty(); render();
+      }
+    }
     if (on === "restore" && e.type === "change" && el.files[0]) restore(el.files[0]);
   };
   app.addEventListener("input", (e) => {
