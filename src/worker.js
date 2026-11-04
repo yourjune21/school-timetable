@@ -7,6 +7,7 @@
  * · 바뀐 내용은 WebSocket으로 그 학교 화면을 열어 둔 모든 사람에게 바로 보냄
  */
 import { DurableObject } from "cloudflare:workers";
+import { VERSION } from "./version.js";
 
 const CORS = {
   "access-control-allow-origin": "*",
@@ -27,7 +28,7 @@ export default {
     const url = new URL(req.url);
     if (!url.pathname.startsWith("/api/")) return env.ASSETS.fetch(req);
     if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: CORS });
-    if (url.pathname === "/api/health") return json({ ok: true, app: "tt", v: 1, allowNew: env.ALLOW_NEW_SCHOOL !== "false" });
+    if (url.pathname === "/api/health") return json({ ok: true, app: "tt", v: 1, version: VERSION, allowNew: env.ALLOW_NEW_SCHOOL !== "false" });
     const m = url.pathname.match(/^\/api\/s\/([^/]+)(\/.*)$/);
     if (!m || !SID_RE.test(m[1])) return fail(404, "not_found", "잘못된 주소입니다.");
     const sid = m[1];
