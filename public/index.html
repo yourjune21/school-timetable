@@ -1,0 +1,2330 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>함께 짜는 시간표</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;600;700&family=Jua&display=swap">
+<style>
+/* 학교 시간표 — 방과후·돌봄 시간표(짜봄)와 같은 디자인: 학교 색 띠 머리글 + 패널 + 종이처럼 출력 */
+:root {
+  --bg: #f6faf8;
+  --surface: #ffffff;
+  --surface-2: #e6f3ee;
+  --ink: #1b2420;
+  --muted: #5b6862;
+  --line: #d3e6de;
+  --brand: #0d8667;
+  --on-brand: #ffffff;
+  --chalk: #ffd24d;
+  --ok: #1e7346;
+  --warn: #8a5700;
+  --danger: #b3261e;
+  --danger-bg: #fde8e6;
+  --shade: rgba(60, 70, 65, 0.08);
+  --shadow: 0 1px 2px rgba(20, 40, 30, 0.06), 0 6px 18px rgba(20, 40, 30, 0.06);
+  --paper: #ffffff;
+  --paper-ink: #1d2421;
+  --paper-muted: #66716c;
+  --paper-line: #9ea9a3;
+  --paper-soft: #f2f5f3;
+  --f-display: "Jua", "IBM Plex Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+  --f-body: "IBM Plex Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans KR", sans-serif;
+  --r: 12px;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #111714; --surface: #19211d; --surface-2: #212b26; --ink: #e6ede8; --muted: #9caaa3; --line: #2d3a33;
+    --chalk: #e8b740; --ok: #5fc48d; --warn: #e3ac4a; --danger: #f08a80; --danger-bg: #3a1d1a; --shade: rgba(255, 255, 255, 0.06);
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 22px rgba(0, 0, 0, 0.25);
+    color-scheme: dark;
+  }
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--f-body); font-size: 15px; line-height: 1.55; word-break: keep-all; overflow-wrap: anywhere; }
+body.no-scroll { overflow: hidden; }
+button, input, select, textarea { font: inherit; color: inherit; }
+h1, h2, h3 { margin: 0; text-wrap: balance; }
+code { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; font-size: 0.92em; background: var(--surface-2); padding: 1px 6px; border-radius: 6px; }
+:focus-visible { outline: 3px solid var(--chalk); outline-offset: 2px; }
+[hidden] { display: none !important; }
+
+.wrap { max-width: 1120px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.main { padding-block: 18px 120px; display: flex; flex-direction: column; gap: 16px; }
+.loading { padding: 80px 16px; text-align: center; color: var(--muted); }
+
+.eyebrow { margin: 0; font-size: 12px; letter-spacing: 0.06em; opacity: 0.85; }
+.h2 { font-family: var(--f-display); font-weight: 400; font-size: 1.4rem; line-height: 1.3; }
+.h3 { font-size: 1.04rem; font-weight: 700; }
+.muted { color: var(--muted); margin: 0; }
+.hint { margin: 0; color: var(--muted); font-size: 0.9rem; }
+.note { margin: 0; padding: 10px 12px; border-radius: 10px; background: var(--surface-2); font-size: 0.92rem; }
+.note.warn { background: #fff4d6; color: #5a4100; }
+@media (prefers-color-scheme: dark) { .note.warn { background: #3a3014; color: #f3d48a; } }
+.empty { color: var(--muted); padding: 24px 0; margin: 0; text-align: center; }
+.num { font-variant-numeric: tabular-nums; }
+
+/* 버튼 */
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 42px; padding: 0 16px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); font-weight: 600; cursor: pointer; text-decoration: none; white-space: nowrap; }
+.btn:hover:not(:disabled) { border-color: var(--brand); }
+.btn.primary { background: var(--brand); border-color: var(--brand); color: var(--on-brand); }
+.btn.primary:hover:not(:disabled) { filter: brightness(1.08); }
+.btn.ghost { background: transparent; }
+.btn.danger { background: var(--danger); border-color: var(--danger); color: #fff; }
+.btn.sm { min-height: 34px; padding: 0 12px; font-size: 0.88rem; border-radius: 8px; }
+.btn:disabled { opacity: 0.45; cursor: not-allowed; }
+.icon-btn { width: 34px; height: 34px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); cursor: pointer; display: inline-grid; place-items: center; flex: none; }
+.icon-btn:disabled { opacity: 0.35; cursor: default; }
+.link-btn { background: none; border: 0; padding: 4px 0; color: inherit; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; font-size: 0.92rem; }
+.btn-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.row-between { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; }
+.row-end { display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; }
+
+/* 입력 */
+.field { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.field > span { font-weight: 600; font-size: 0.92rem; }
+.field > span small { font-weight: 400; color: var(--muted); }
+input[type="text"], input[type="password"], input[type="number"], input[type="time"], input:not([type]), select, textarea {
+  width: 100%; min-height: 42px; padding: 8px 12px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); color: var(--ink);
+}
+textarea { min-height: 110px; resize: vertical; line-height: 1.6; }
+input:focus, select:focus, textarea:focus { outline: none; border-color: var(--brand); box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand) 22%, transparent); }
+.check { display: flex; gap: 8px; align-items: flex-start; cursor: pointer; }
+.check input { width: 18px; height: 18px; margin-top: 3px; accent-color: var(--brand); flex: none; }
+.grid-form { display: grid; gap: 14px; }
+.grid-form.two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.grid-form.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.span2 { grid-column: 1 / -1; }
+.stack { display: flex; flex-direction: column; gap: 14px; }
+.code-input { font-family: ui-monospace, Menlo, Consolas, monospace; letter-spacing: 0.18em; text-transform: uppercase; font-size: 1.15rem !important; }
+
+/* 칩 */
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { display: inline-flex; align-items: center; gap: 6px; min-height: 36px; padding: 0 12px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); font-size: 0.9rem; cursor: pointer; font-weight: 500; color: var(--ink); }
+.chip:hover { border-color: var(--brand); }
+.chip.on { background: var(--brand); border-color: var(--brand); color: var(--on-brand); font-weight: 700; }
+.chip:disabled { opacity: 0.4; cursor: not-allowed; }
+.chip small { opacity: 0.75; font-weight: 400; }
+.chip-label { font-size: 0.82rem; color: var(--muted); font-weight: 700; min-width: 44px; align-self: center; }
+.chip-rows { display: flex; flex-direction: column; gap: 8px; }
+.chip-rows > div { display: flex; gap: 8px; align-items: flex-start; flex-wrap: wrap; }
+
+/* 패널 */
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 20px; display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.panel.narrow { max-width: 520px; width: 100%; margin: 0 auto; }
+.panel-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; flex-wrap: wrap; }
+.danger-zone { border-style: dashed; }
+
+/* 머리글: 학교 색 띠 */
+.school-bar { background: var(--brand); color: var(--on-brand); padding-top: env(safe-area-inset-top, 0px); }
+.school-bar-in { display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; padding-block: 18px 14px; flex-wrap: wrap; }
+.school-name { font-family: var(--f-display); font-weight: 400; font-size: clamp(1.45rem, 4.5vw, 2rem); line-height: 1.2; }
+.school-bar .me { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; font-size: 0.9rem; }
+.school-bar .me .btn { color: var(--on-brand); background: transparent; border-color: color-mix(in srgb, var(--on-brand) 45%, transparent); }
+.me-badge { background: color-mix(in srgb, #000 18%, transparent); padding: 4px 10px; border-radius: 999px; font-weight: 600; }
+.demo-banner { background: var(--chalk); color: #2b2100; font-size: 0.86rem; padding-block: 7px; }
+.tabs-bar { background: var(--surface); border-bottom: 1px solid var(--line); position: sticky; top: 0; z-index: 15; }
+.tabs { display: flex; gap: 4px; overflow-x: auto; }
+.tab { border: 0; background: none; padding: 12px 16px; cursor: pointer; font-weight: 700; color: var(--muted); border-bottom: 3px solid transparent; white-space: nowrap; font-size: 0.98rem; }
+.tab.on { color: var(--ink); border-bottom-color: var(--brand); }
+.tab .lock { font-size: 0.8em; opacity: 0.7; }
+
+/* 첫 화면 */
+.landing { min-height: 100vh; display: flex; flex-direction: column; justify-content: center; padding-block: 40px; gap: 16px; max-width: 620px; }
+.landing-card { background: var(--surface); border: 1px solid var(--line); border-radius: 22px; padding: clamp(22px, 5vw, 40px); display: flex; flex-direction: column; gap: 18px; box-shadow: var(--shadow); position: relative; overflow: hidden; }
+.landing-card::before { content: ""; position: absolute; inset: 0 0 auto 0; height: 10px; background: var(--brand); }
+.landing-card .eyebrow { color: var(--brand); font-weight: 700; }
+.landing-title { font-family: var(--f-display); font-weight: 400; font-size: clamp(2rem, 7vw, 3rem); line-height: 1.15; }
+.join { display: flex; gap: 8px; }
+.join input { flex: 1 1 auto; }
+.demo-cta { display: flex; flex-direction: column; gap: 10px; padding-top: 14px; border-top: 1px dashed var(--line); color: var(--muted); }
+.landing-foot { text-align: center; margin: 0; color: var(--muted); font-size: 0.88rem; }
+.recent { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; font-size: 0.88rem; color: var(--muted); }
+
+/* ───── 시간표 표 (화면·출력 공통) ───── */
+.g { width: 100%; border-collapse: collapse; table-layout: fixed; background: var(--paper); color: var(--paper-ink); font-size: var(--g-fs, 13px); }
+.g th, .g td { border: 1px solid var(--paper-line); padding: 0; text-align: center; vertical-align: middle; }
+.g thead th { background: var(--paper-soft); font-weight: 700; height: 2.3em; }
+.g .g-corner { width: var(--g-pw, 58px); font-size: 0.8em; color: var(--paper-muted); }
+.g .g-p { background: var(--paper-soft); line-height: 1.15; }
+.g .g-p b { display: block; font-size: 1.05em; }
+.g .g-p small { display: block; font-size: 0.72em; color: var(--paper-muted); font-weight: 400; font-variant-numeric: tabular-nums; }
+.g td { height: var(--g-rh, 64px); position: relative; }
+.g .g-lunch th, .g .g-lunch td { height: auto; background: var(--paper-soft); color: var(--paper-muted); font-size: 0.78em; padding: 3px 0; }
+.g .cell { position: absolute; inset: 2px; border-radius: 6px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; padding: 2px 3px; overflow: hidden; background: var(--c-bg, transparent); color: var(--c-ink, inherit); border-left: 4px solid var(--c-line, transparent); }
+.g .cell b { font-size: 1.12em; line-height: 1.2; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+.g .cell small { font-size: 0.76em; line-height: 1.25; opacity: 0.9; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+.g .cell.conflict { background: repeating-linear-gradient(135deg, #fde3e0 0 6px, #fff 6px 12px); border-left-color: #d43d33; color: #8a1b14; }
+.g .cell.conflict b { font-size: 0.95em; }
+
+.page .g .cell.conflict { background: #fde3e0; }
+
+/* 한눈에 보기 표 */
+.mx-wrap { overflow-x: auto; }
+.mx { border-collapse: collapse; table-layout: fixed; width: 100%; min-width: var(--mx-min, 900px); background: var(--paper); color: var(--paper-ink); font-size: var(--mx-fs, 12px); }
+.mx th, .mx td { border: 1px solid var(--paper-line); text-align: center; padding: 0; height: var(--mx-rh, 30px); overflow: hidden; white-space: nowrap; }
+.mx thead th { background: var(--paper-soft); font-weight: 700; height: auto; padding: 3px 0; }
+.mx thead tr:last-child th { font-size: 0.85em; font-weight: 600; color: var(--paper-muted); }
+.mx .mx-day { border-left: 2px solid var(--paper-ink); }
+.mx td.d1 { border-left: 2px solid var(--paper-ink); }
+.mx tbody th { background: var(--paper-soft); font-weight: 700; text-align: left; padding: 0 6px; width: var(--mx-lw, 92px); text-overflow: ellipsis; }
+.mx tbody th small { color: var(--paper-muted); font-weight: 400; }
+.mx td.f { background: var(--c-bg); color: var(--c-ink); font-weight: 600; line-height: 1.1; }
+.mx td.f small { display: block; font-size: 0.78em; font-weight: 400; }
+.mx td.x { background: #fde3e0; color: #8a1b14; font-weight: 700; }
+.mx tbody tr.gsep th, .mx tbody tr.gsep td { border-top: 2px solid var(--paper-ink); }
+
+/* 조회 화면 카드 */
+.sheet-card { background: var(--paper); color: var(--paper-ink); border: 1px solid var(--line); border-radius: 14px; padding: 18px; display: flex; flex-direction: column; gap: 12px; }
+.sheet-card .sheet-title { font-family: var(--f-display); font-weight: 400; font-size: 1.5rem; line-height: 1.2; }
+.sheet-card .sheet-sub { margin: 0; color: var(--paper-muted); font-size: 0.9rem; }
+.g-scroll { overflow-x: auto; }
+.g-scroll .g { min-width: 620px; }
+.hours { display: flex; flex-wrap: wrap; gap: 6px; font-size: 0.86rem; }
+.hours span { display: inline-flex; gap: 6px; align-items: center; padding: 3px 10px 3px 4px; border-radius: 999px; background: var(--paper-soft); color: var(--paper-ink); }
+.hours i { width: 14px; height: 14px; border-radius: 4px; display: inline-block; background: var(--c-bg); border: 2px solid var(--c-line); }
+.hours b { font-variant-numeric: tabular-nums; }
+.conflict-box { border: 1px solid #e5a29c; background: var(--danger-bg); color: var(--danger); border-radius: 12px; padding: 12px 14px; font-size: 0.9rem; }
+.conflict-box ul { margin: 6px 0 0; padding-left: 18px; }
+
+/* ───── 입력 화면 ───── */
+.who { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.who-name { font-weight: 700; font-size: 1.05rem; }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+.seg button { border: 0; background: var(--surface); padding: 9px 14px; cursor: pointer; font-weight: 600; color: var(--muted); }
+.seg button + button { border-left: 1px solid var(--line); }
+.seg button.on { background: var(--brand); color: var(--on-brand); }
+.palette { display: flex; flex-wrap: wrap; gap: 6px; }
+.brush { display: inline-flex; align-items: center; gap: 6px; min-height: 38px; padding: 0 12px; border-radius: 10px; border: 2px solid var(--c-line, var(--line)); background: var(--c-bg, var(--surface)); color: var(--c-ink, var(--ink)); font-weight: 700; cursor: pointer; font-size: 0.92rem; }
+.brush.on { box-shadow: 0 0 0 3px var(--ink); }
+.brush.eraser { --c-line: var(--muted); --c-bg: var(--surface); --c-ink: var(--ink); border-style: dashed; }
+.brush small { font-weight: 400; opacity: 0.8; }
+.brush:disabled { opacity: 0.35; cursor: not-allowed; }
+.ed-grid .g td { cursor: pointer; }
+.ed-grid .g td:hover .cell.empty { background: var(--surface-2); }
+.ed-grid .g .cell.empty::after { content: "+"; color: var(--paper-line); font-size: 1.2em; }
+.ed-grid .g .cell.locked { background: repeating-linear-gradient(135deg, var(--shade) 0 6px, transparent 6px 12px), var(--c-bg, #eceeee); border-left-style: dotted; opacity: 0.8; cursor: not-allowed; }
+.ed-grid .g .cell.locked::before { content: "🔒"; position: absolute; top: 2px; right: 4px; font-size: 10px; opacity: 0.7; }
+.ed-grid .g .cell.busy { background: repeating-linear-gradient(135deg, var(--shade) 0 6px, transparent 6px 12px); color: var(--paper-muted); border-left: 4px dotted var(--paper-line); cursor: not-allowed; }
+.ed-grid .g .cell.mine { box-shadow: inset 0 0 0 1px var(--c-line); }
+.ed-grid .g td.flash .cell { animation: flash 0.5s; }
+@keyframes flash { from { box-shadow: 0 0 0 3px var(--chalk); } to { box-shadow: none; } }
+.save-state { font-size: 0.86rem; color: var(--muted); }
+.save-state.saving { color: var(--warn); }
+.save-state.err { color: var(--danger); font-weight: 700; }
+.ed-layout { display: grid; grid-template-columns: minmax(0, 1fr) 260px; gap: 16px; align-items: start; }
+.side { display: flex; flex-direction: column; gap: 12px; position: sticky; top: 60px; }
+.side .panel { padding: 14px; gap: 10px; }
+.mini-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; font-size: 0.88rem; }
+.mini-list li { display: flex; justify-content: space-between; gap: 8px; }
+
+/* ───── 설정 ───── */
+.set-nav { display: flex; gap: 6px; flex-wrap: wrap; }
+.tbl { width: 100%; border-collapse: collapse; }
+.tbl th, .tbl td { text-align: left; padding: 8px 6px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+.tbl th { font-size: 0.82rem; color: var(--muted); font-weight: 600; white-space: nowrap; }
+.tbl td input, .tbl td select { min-height: 36px; padding: 4px 8px; }
+.tbl .w-s { width: 90px; }
+.tbl .w-xs { width: 64px; }
+.tbl-wrap { overflow-x: auto; }
+.code { font-family: ui-monospace, Menlo, Consolas, monospace; font-weight: 700; letter-spacing: 0.12em; background: var(--surface-2); padding: 3px 8px; border-radius: 6px; }
+.grade-counts { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 10px; }
+.grade-counts label { display: flex; flex-direction: column; gap: 4px; font-weight: 600; font-size: 0.9rem; }
+.color-pick { display: flex; gap: 4px; flex-wrap: wrap; }
+.color-pick button { width: 22px; height: 22px; border-radius: 6px; border: 2px solid var(--c-line); background: var(--c-bg); cursor: pointer; padding: 0; }
+.color-pick button.on { box-shadow: 0 0 0 2px var(--ink); }
+.dirty-bar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 30; background: var(--surface); border-top: 2px solid var(--brand); box-shadow: 0 -6px 20px rgba(0, 0, 0, 0.08); padding-bottom: env(safe-area-inset-bottom, 0px); }
+.dirty-bar .wrap { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding-block: 10px; flex-wrap: wrap; }
+
+/* ───── 출력 ───── */
+.print-layout { display: grid; grid-template-columns: 300px minmax(0, 1fr); gap: 16px; align-items: start; }
+.print-opts { position: sticky; top: 60px; }
+.preview { display: flex; flex-direction: column; gap: 14px; align-items: center; background: var(--surface-2); border-radius: 14px; padding: 14px; min-height: 300px; }
+.pv-page { box-shadow: 0 2px 12px rgba(0, 0, 0, 0.18); background: #fff; overflow: hidden; flex: none; }
+.pv-page > .page { transform-origin: 0 0; }
+.pv-count { font-size: 0.86rem; color: var(--muted); align-self: stretch; }
+
+/* 종이 한 장 (px = 96dpi 기준 A4) */
+.page { background: #fff; color: #1d2421; font-family: var(--f-body); display: flex; flex-direction: column; padding: 30px 32px 26px; gap: 10px; overflow: hidden; --paper: #fff; --paper-ink: #1d2421; --paper-muted: #66716c; --paper-line: #9ea9a3; --paper-soft: #f2f5f3; }
+.page-head { display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; border-bottom: 2px solid #1d2421; padding-bottom: 8px; flex: none; }
+.page-title { font-family: var(--f-display); font-weight: 400; font-size: 26px; line-height: 1.15; }
+.page-kicker { font-size: 12px; color: #66716c; margin: 0 0 2px; }
+.page-school { font-size: 14px; font-weight: 700; text-align: right; }
+.page-school small { display: block; font-weight: 400; color: #66716c; font-size: 12px; }
+.page-body { flex: 1 1 auto; min-height: 0; display: grid; gap: 14px 16px; }
+.page-foot { flex: none; display: flex; justify-content: space-between; font-size: 10.5px; color: #66716c; }
+.unit { display: flex; flex-direction: column; gap: 4px; min-height: 0; min-width: 0; }
+.unit-title { font-weight: 700; font-size: var(--u-fs, 15px); display: flex; justify-content: space-between; gap: 8px; align-items: baseline; flex: none; }
+.unit-title small { font-weight: 400; color: #66716c; font-size: 0.8em; }
+.unit .g { flex: 1 1 auto; height: 100%; }
+.unit .g-box { flex: 1 1 auto; min-height: 0; display: flex; }
+.unit .g td { height: auto; }
+.unit.l1 .cell small { display: none; }
+.unit.l2 .cell small ~ small { display: none; }
+.unit .cell { line-height: 1.25; }
+.unit .g .g-lunch th, .unit .g .g-lunch td { height: 1.7em; }
+.unit .hours { font-size: calc(var(--g-fs, 13px) * 0.85); gap: 4px; flex: none; }
+.unit .hours span { padding: 1px 8px 1px 3px; }
+.page .mx { min-width: 0; }
+.page .mx-box { flex: 1 1 auto; min-height: 0; }
+.slips { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0; flex: 1 1 auto; align-content: start; }
+.slip { border: 1px dashed #9ea9a3; padding: 14px 16px; display: flex; flex-direction: column; gap: 4px; height: 128px; }
+.slip b { font-size: 17px; }
+.slip .code { font-size: 22px; align-self: flex-start; background: #f2f5f3; }
+.slip small { color: #66716c; font-size: 11px; }
+
+/* 모달·알림 */
+.modal-back { position: fixed; inset: 0; z-index: 50; background: rgba(10, 20, 15, 0.45); display: flex; align-items: flex-start; justify-content: center; padding: 24px 12px; overflow-y: auto; }
+.modal { background: var(--surface); color: var(--ink); width: 100%; max-width: 520px; border-radius: 18px; box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3); }
+.modal-wide { max-width: 900px; }
+.modal-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 16px 18px; border-bottom: 1px solid var(--line); }
+.modal-head h2 { font-size: 1.1rem; }
+.modal-body { padding: 18px; display: flex; flex-direction: column; gap: 14px; }
+.preview-img { width: 100%; border: 1px solid var(--line); border-radius: 8px; }
+.toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(80px + env(safe-area-inset-bottom, 0px)); z-index: 60; max-width: min(92vw, 560px); background: var(--ink); color: var(--bg); padding: 12px 16px; border-radius: 12px; box-shadow: var(--shadow); font-size: 0.92rem; }
+.toast-error { background: var(--danger); color: #fff; }
+.errs { background: var(--danger-bg); color: var(--danger); border-radius: 10px; padding: 10px 14px; font-size: 0.9rem; margin: 0; }
+
+@media (max-width: 900px) {
+  .ed-layout, .print-layout { grid-template-columns: minmax(0, 1fr); }
+  .side, .print-opts { position: static; }
+}
+@media (max-width: 720px) {
+  .grid-form.two, .grid-form.three { grid-template-columns: minmax(0, 1fr); }
+  .grade-counts { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .panel { padding: 16px; }
+  .tab { padding: 11px 12px; }
+}
+
+/* 인쇄: 출력용 종이만 */
+#print-root { display: none; }
+@media print {
+  body.printing > *:not(#print-root) { display: none !important; }
+  body.printing #print-root { display: block; }
+  body.printing #print-root .page { break-after: page; page-break-after: always; }
+  body.printing #print-root .page:last-child { break-after: auto; page-break-after: auto; }
+  body { background: #fff; }
+}
+
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+/*
+ * 함께 짜는 시간표 — 설정
+ *
+ * SERVER
+ *   "auto"  : 같은 주소에 시간표 서버(Cloudflare)가 있으면 서버에 저장, 없으면 체험 모드
+ *   true    : 반드시 서버에 저장 (서버에 연결이 안 되면 안내만 보여 주고 체험 모드로 넘어가지 않음)
+ *   false   : 체험 모드 — 이 브라우저에만 저장
+ * 주소 끝에 ?demo 를 붙이면 언제든 체험 모드로 열 수 있습니다.
+ */
+window.TT_CONFIG = {
+  SERVER: true,
+
+  // 화면 파일을 다른 곳(예: 학교 홈페이지)에 두고 서버만 Cloudflare에 둘 때 그 서버 주소
+  // 예) "https://school-timetable.내이름.workers.dev"   (같은 주소에서 열면 비워 둠)
+  API_BASE: "",
+
+  // 학교 한 곳만 운영한다면 그 학교 코드를 적어 두세요. 첫 화면 없이 바로 그 학교가 열립니다.
+  DEFAULT_SCHOOL: "",
+
+  // 사이트 이름 (브라우저 탭, 첫 화면)
+  SITE_NAME: "함께 짜는 시간표",
+
+  // 첫 화면에 '새 학교 만들기' 단추를 보일지 (서버 설정 ALLOW_NEW_SCHOOL 이 false 면 어차피 막힘)
+  ALLOW_NEW_SCHOOL: true
+};
+
+</script>
+<script>
+/* 공통 상수·도우미·자료 구조 */
+(function () {
+  const T = (window.TT = window.TT || {});
+
+  T.DAYS = ["", "월", "화", "수", "목", "금", "토"];
+  T.ROLES = { homeroom: "담임", subject: "교과전담", instructor: "강사" };
+  T.ROLE_ORDER = ["homeroom", "subject", "instructor"];
+
+  // 과목 색 (방과후 시간표와 같은 12색)
+  T.COLORS = {
+    red: { name: "빨강", bg: "#ffe3e0", line: "#d43d33", ink: "#8a1b14" },
+    orange: { name: "주황", bg: "#ffeedd", line: "#e07a1f", ink: "#8a4108" },
+    yellow: { name: "노랑", bg: "#fff6cf", line: "#c9a000", ink: "#6b5300" },
+    lime: { name: "연두", bg: "#eef8d8", line: "#6b9e1f", ink: "#3b5a0c" },
+    green: { name: "초록", bg: "#e0f3e8", line: "#2f8f5b", ink: "#185636" },
+    teal: { name: "청록", bg: "#dcf4f3", line: "#1f9a94", ink: "#0f5a56" },
+    sky: { name: "하늘", bg: "#e0f4ff", line: "#1e90c8", ink: "#0b4d70" },
+    blue: { name: "파랑", bg: "#e4eeff", line: "#3b6fd4", ink: "#1d3f86" },
+    purple: { name: "보라", bg: "#efe6ff", line: "#7b52d1", ink: "#45288a" },
+    pink: { name: "분홍", bg: "#ffe5ee", line: "#d4497a", ink: "#85193f" },
+    brown: { name: "갈색", bg: "#f3e9df", line: "#9a6a3f", ink: "#5a3a1c" },
+    gray: { name: "회색", bg: "#eceeee", line: "#7d8584", ink: "#3c4241" },
+  };
+  T.COLOR_KEYS = Object.keys(T.COLORS);
+  T.colorVars = (key) => {
+    const c = T.COLORS[key] || T.COLORS.gray;
+    return `--c-bg:${c.bg};--c-line:${c.line};--c-ink:${c.ink}`;
+  };
+
+  /* ───── 문자열 ───── */
+  T.esc = (v) => String(v ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+  T.uid = (p = "") => p + Math.random().toString(36).slice(2, 8) + Date.now().toString(36).slice(-4);
+  T.clone = (o) => JSON.parse(JSON.stringify(o ?? null));
+
+  /* ───── 인증코드 ───── */
+  T.CODE_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // 헷갈리는 O·0·I·1 뺌
+  T.newCode = (n = 6) => {
+    const a = new Uint32Array(n);
+    crypto.getRandomValues(a);
+    return [...a].map((x) => T.CODE_CHARS[x % T.CODE_CHARS.length]).join("");
+  };
+  T.cleanCode = (v) => String(v || "").toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 24);
+  T.sha256hex = async (str) => {
+    const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(str));
+    return [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, "0")).join("");
+  };
+  // 코드 자체는 저장하지 않고, 학교·사람·코드를 묶은 지문만 비교
+  T.codeHash = (sid, pid, code) => T.sha256hex(`${sid}|${pid}|${T.cleanCode(code)}`);
+  T.ADMIN = "_admin";
+
+  /* ───── 학교 코드 ───── */
+  T.cleanSid = (v) => String(v || "").trim().toLowerCase();
+  T.validSid = (v) => /^[a-z0-9][a-z0-9-]{2,29}$/.test(v);
+
+  /* ───── 기본 학교 설정 ───── */
+  const S = (id, name, color, short = "") => ({ id, name, short, color });
+  T.defaultSubjects = (level) =>
+    level === "elem"
+      ? [
+          S("kor", "국어", "red"), S("math", "수학", "blue"), S("soc", "사회", "orange"), S("sci", "과학", "green"),
+          S("eng", "영어", "purple"), S("mus", "음악", "pink"), S("art", "미술", "yellow"), S("pe", "체육", "sky"),
+          S("mor", "도덕", "teal"), S("prac", "실과", "lime"), S("cre", "창의적 체험활동", "gray", "창체"),
+          S("bar", "바른 생활", "brown", "바른"), S("sul", "슬기로운 생활", "lime", "슬기"), S("jul", "즐거운 생활", "pink", "즐거운"),
+        ]
+      : [
+          S("kor", "국어", "red"), S("math", "수학", "blue"), S("eng", "영어", "purple"), S("soc", "사회", "orange"),
+          S("his", "역사", "brown"), S("mor", "도덕", "teal"), S("sci", "과학", "green"), S("tech", "기술·가정", "lime", "기가"),
+          S("info", "정보", "sky"), S("pe", "체육", "sky"), S("mus", "음악", "pink"), S("art", "미술", "yellow"),
+          S("cre", "창의적 체험활동", "gray", "창체"),
+        ];
+  T.defaultTimes = (level) =>
+    level === "elem"
+      ? [["09:00", "09:40"], ["09:50", "10:30"], ["10:50", "11:30"], ["11:40", "12:20"], ["13:10", "13:50"], ["14:00", "14:40"], ["14:50", "15:30"], ["15:40", "16:20"], ["16:30", "17:10"]]
+      : [["08:50", "09:35"], ["09:45", "10:30"], ["10:40", "11:25"], ["11:35", "12:20"], ["13:10", "13:55"], ["14:05", "14:50"], ["15:00", "15:45"], ["15:55", "16:40"], ["16:50", "17:35"]];
+  T.defaultRooms = (level) =>
+    (level === "elem"
+      ? [["과학실", false], ["영어실", false], ["음악실", false], ["체육관", false], ["운동장", true], ["컴퓨터실", false]]
+      : [["과학실", false], ["음악실", false], ["미술실", false], ["정보실", false], ["체육관", false], ["운동장", true]]
+    ).map(([name, multi], i) => ({ id: "r" + (i + 1), name, multi }));
+
+  T.thisSchoolYear = () => {
+    const d = new Date();
+    return d.getMonth() >= 10 ? d.getFullYear() + 1 : d.getMonth() < 1 ? d.getFullYear() : d.getFullYear();
+  };
+  T.newSchool = (name, level = "elem") => ({
+    name: name || "",
+    year: T.thisSchoolYear(),
+    term: "1학기",
+    level,
+    classCounts: level === "elem" ? [3, 3, 3, 3, 3, 3] : [4, 4, 4],
+    days: [1, 2, 3, 4, 5],
+    periods: level === "elem" ? 6 : 7,
+    times: T.defaultTimes(level).map(([s, e]) => ({ s, e })),
+    lunchAfter: 4,
+    subjects: T.defaultSubjects(level),
+    rooms: T.defaultRooms(level),
+    people: [],
+    homeroomOpen: true,
+    createdAt: new Date().toISOString(),
+  });
+
+  /* ───── 학교 자료 읽기 ───── */
+  T.gradeList = (sc) => (sc.classCounts || []).map((n, i) => ({ g: i + 1, n: Number(n) || 0 })).filter((x) => x.n > 0);
+  T.classList = (sc) => {
+    const out = [];
+    T.gradeList(sc).forEach(({ g, n }) => { for (let c = 1; c <= n; c++) out.push({ id: `${g}-${c}`, g, c }); });
+    return out;
+  };
+  T.classesOfGrade = (sc, g) => T.classList(sc).filter((x) => x.g === g);
+  T.className = (id) => { const [g, c] = String(id).split("-"); return `${g}학년 ${c}반`; };
+  T.hasClass = (sc, id) => T.classList(sc).some((x) => x.id === id);
+  T.periodList = (sc) => Array.from({ length: Number(sc.periods) || 6 }, (_, i) => i + 1);
+  T.dayList = (sc) => (sc.days || [1, 2, 3, 4, 5]).slice().sort((a, b) => a - b);
+  T.timeOf = (sc, p) => (sc.times || [])[p - 1] || null;
+
+  T.subject = (sc, id) => (sc.subjects || []).find((s) => s.id === id) || null;
+  T.subjectShort = (sc, id) => { const s = T.subject(sc, id); return s ? s.short || s.name : "?"; };
+  T.subjectName = (sc, id) => { const s = T.subject(sc, id); return s ? s.name : "(지운 과목)"; };
+  T.subjectColor = (sc, id) => T.subject(sc, id)?.color || "gray";
+
+  T.person = (sc, pid) => (sc.people || []).find((p) => p.id === pid) || null;
+  T.personName = (sc, pid) => {
+    if (pid === T.ADMIN) return "관리자";
+    const p = T.person(sc, pid);
+    if (!p) return "(지운 사람)";
+    return p.name || (p.role === "homeroom" && p.cls ? `${p.cls} 담임` : T.ROLES[p.role] || "이름 없음");
+  };
+  T.personDesc = (sc, pid) => {
+    const p = T.person(sc, pid);
+    if (!p) return "";
+    if (p.role === "homeroom") return p.cls ? `${T.className(p.cls)} 담임` : "담임";
+    const subj = p.subject ? T.subjectName(sc, p.subject) + " " : "";
+    return `${subj}${T.ROLES[p.role] || ""}`.trim();
+  };
+  T.homeroomOf = (sc, cls) => (sc.people || []).find((p) => p.role === "homeroom" && p.cls === cls) || null;
+  T.peopleSorted = (sc) => {
+    const ord = (p) => T.ROLE_ORDER.indexOf(p.role);
+    return (sc.people || []).slice().sort((a, b) => {
+      if (ord(a) !== ord(b)) return ord(a) - ord(b);
+      if (a.role === "homeroom") return clsKey(a.cls) - clsKey(b.cls);
+      return (a.name || "").localeCompare(b.name || "", "ko");
+    });
+  };
+  const clsKey = (id) => { if (!id) return 9999; const [g, c] = id.split("-").map(Number); return g * 100 + c; };
+  T.clsKey = clsKey;
+
+  // 장소: '' 또는 'hr:3-2' = 그 학급 교실, 'r1' 등 = 특별실
+  T.room = (sc, rid) => (sc.rooms || []).find((r) => r.id === rid) || null;
+  T.roomOfEntry = (cls, r) => (r ? r : `hr:${cls}`);
+  T.roomName = (sc, rid) => {
+    if (!rid) return "학급 교실";
+    if (rid.startsWith("hr:")) return `${rid.slice(3)} 교실`;
+    return T.room(sc, rid)?.name || "(지운 장소)";
+  };
+  T.roomList = (sc) => [
+    ...(sc.rooms || []).map((r) => ({ id: r.id, name: r.name, special: true, multi: !!r.multi })),
+    ...T.classList(sc).map((c) => ({ id: `hr:${c.id}`, name: `${c.id} 교실`, special: false, cls: c.id })),
+  ];
+
+  /* ───── 시간표 색인 ─────
+     slots: { pid: { e: { "3-2|1|3": { s: 과목id, r: 장소id } } } }
+     → 학급별 / 사람별 / 장소별로 [요일|교시] 칸에 무엇이 있는지 */
+  T.key = (cls, d, p) => `${cls}|${d}|${p}`;
+  T.parseKey = (k) => { const [cls, d, p] = k.split("|"); return { cls, d: Number(d), p: Number(p) }; };
+  T.buildIndex = (sc, slots) => {
+    const classes = new Set(T.classList(sc).map((c) => c.id));
+    const days = new Set(T.dayList(sc));
+    const maxP = Number(sc.periods) || 6;
+    const byClass = {}, byPerson = {}, byRoom = {};
+    const put = (map, id, dp, it) => ((map[id] = map[id] || {})[dp] = (map[id][dp] || [])).push(it);
+    let hidden = 0;
+    Object.entries(slots || {}).forEach(([pid, doc]) => {
+      Object.entries((doc && doc.e) || {}).forEach(([k, v]) => {
+        const { cls, d, p } = T.parseKey(k);
+        if (!classes.has(cls) || !days.has(d) || p < 1 || p > maxP || !v) { hidden++; return; }
+        const it = { pid, cls, d, p, s: v.s || "", r: v.r || "", k };
+        it.room = T.roomOfEntry(cls, it.r);
+        const dp = `${d}|${p}`;
+        put(byClass, cls, dp, it);
+        put(byPerson, pid, dp, it);
+        put(byRoom, it.room, dp, it);
+      });
+    });
+    const conflicts = [];
+    const scan = (map, kind) =>
+      Object.entries(map).forEach(([id, cells]) =>
+        Object.entries(cells).forEach(([dp, items]) => {
+          if (items.length < 2) return;
+          if (kind === "room") {
+            if (id.startsWith("hr:")) { if (new Set(items.map((i) => i.cls)).size < 2) return; }
+            else if (T.room(sc, id)?.multi) return;
+          }
+          const [d, p] = dp.split("|").map(Number);
+          conflicts.push({ kind, id, d, p, items });
+        }));
+    scan(byClass, "class");
+    scan(byPerson, "person");
+    scan(byRoom, "room");
+    return { byClass, byPerson, byRoom, conflicts, hidden };
+  };
+  T.cellItems = (idx, kind, id, d, p) => {
+    const map = kind === "class" ? idx.byClass : kind === "person" ? idx.byPerson : idx.byRoom;
+    return (map[id] && map[id][`${d}|${p}`]) || [];
+  };
+  // 과목별 시수 (학급 / 사람 / 장소)
+  T.hoursBy = (idx, kind, id) => {
+    const map = kind === "class" ? idx.byClass : kind === "person" ? idx.byPerson : idx.byRoom;
+    const out = {};
+    let total = 0;
+    Object.values(map[id] || {}).forEach((items) => items.forEach((it) => { out[it.s] = (out[it.s] || 0) + 1; total++; }));
+    return { by: out, total };
+  };
+  T.conflictText = (sc, c) => {
+    const where = c.kind === "class" ? c.id : c.kind === "person" ? T.personName(sc, c.id) + " 선생님" : T.roomName(sc, c.id);
+    const what = c.items.map((it) => `${it.cls} ${T.subjectShort(sc, it.s)}(${T.personName(sc, it.pid)})`).join(", ");
+    return `${where} · ${T.DAYS[c.d]} ${c.p}교시 — ${what}`;
+  };
+
+  /* ───── 체험 학교 자료 ───── */
+  T.EXAMPLE_ID = "example";
+  T.EXAMPLE_CODES = { admin: "ADMIN1", teacher: "1111" };
+  T.exampleSchool = () => {
+    const sc = T.newSchool("햇살초등학교", "elem");
+    const surn = "김이박최정강조윤장임한오서신권황안송류홍";
+    const given = ["민준", "서연", "도윤", "하은", "지호", "수아", "예준", "지유", "시우", "하린", "주원", "서윤", "건우", "채원", "현우", "지아", "우진", "윤서"];
+    let n = 0;
+    T.classList(sc).forEach((c) => {
+      sc.people.push({ id: `p${c.id.replace("-", "")}`, name: surn[n % surn.length] + given[n % given.length], role: "homeroom", cls: c.id, subject: "", room: "" });
+      n++;
+    });
+    sc.people.push(
+      { id: "pe1", name: "박영어", role: "subject", cls: "", subject: "eng", room: "r2" },
+      { id: "pe2", name: "정과학", role: "subject", cls: "", subject: "sci", room: "r1" },
+      { id: "pe3", name: "최체육", role: "subject", cls: "", subject: "pe", room: "r4" },
+      { id: "pe4", name: "한음악", role: "subject", cls: "", subject: "mus", room: "r3" },
+      { id: "pi1", name: "오스포츠", role: "instructor", cls: "", subject: "pe", room: "r5" },
+    );
+    // 교과전담 시간을 먼저 채움 (학년별 필요 시수)
+    const need = [
+      ["pe1", [3, 4], 2], ["pe1", [5], 3],
+      ["pe2", [5, 6], 3],
+      ["pe3", [5, 6], 2],
+      ["pe4", [3, 4], 1], ["pe4", [5, 6], 1],
+      ["pi1", [3, 4], 1],
+    ];
+    const slots = {};
+    const busyCls = {}, busyP = {}, busyR = {};
+    const days = T.dayList(sc), periods = [1, 2, 3, 4, 5, 6];
+    let seed = 7;
+    const rnd = () => ((seed = (seed * 9301 + 49297) % 233280) / 233280);
+    need.forEach(([pid, grades, hrs]) => {
+      const p = T.person(sc, pid);
+      T.classList(sc).filter((c) => grades.includes(c.g)).forEach((c) => {
+        let left = hrs, tries = 0;
+        while (left > 0 && tries++ < 200) {
+          const d = days[Math.floor(rnd() * days.length)];
+          const pp = periods[Math.floor(rnd() * (c.g <= 4 ? 5 : 6))];
+          const dp = `${d}|${pp}`;
+          if (busyCls[c.id + dp] || busyP[pid + dp] || (!T.room(sc, p.room)?.multi && busyR[p.room + dp])) continue;
+          if (Object.keys(slots[pid]?.e || {}).some((k) => k.startsWith(c.id + `|${d}|`))) continue; // 같은 날 두 번은 피함
+          (slots[pid] = slots[pid] || { e: {} }).e[T.key(c.id, d, pp)] = { s: p.subject, r: p.room };
+          busyCls[c.id + dp] = busyP[pid + dp] = busyR[p.room + dp] = 1;
+          left--;
+        }
+      });
+    });
+    // 3학년 1반은 담임이 나머지를 채운 예시
+    const fill = ["kor", "math", "soc", "sci", "kor", "math", "art", "mor", "kor", "pe", "cre", "math", "kor", "soc", "sci", "art", "cre", "kor", "math", "mor", "kor", "soc", "sci", "pe", "math", "kor", "cre", "soc"];
+    let fi = 0;
+    days.forEach((d) => periods.forEach((pp) => {
+      if (pp === 6 && d !== 2 && d !== 4) return;
+      if (busyCls["3-1" + `${d}|${pp}`]) return;
+      (slots["p31"] = slots["p31"] || { e: {} }).e[T.key("3-1", d, pp)] = { s: fill[fi++ % fill.length], r: "" };
+    }));
+    return { school: sc, slots };
+  };
+})();
+
+</script>
+<script>
+/* 저장소: 체험 모드(이 브라우저) / Cloudflare 서버
+ *   서버 쪽 자료 구조와 권한 확인은 cloudflare/src/worker.js 에 있습니다.
+ *   두 저장소는 같은 함수(getSchool·watch·login·saveSlots …)를 갖고 있어 화면 코드는 똑같습니다.
+ */
+(function () {
+  const T = (window.TT = window.TT || {});
+  const ADMIN = T.ADMIN;
+
+  class Denied extends Error { constructor(m = "권한이 없습니다. 인증코드로 다시 들어와 주세요.") { super(m); this.code = "denied"; } }
+  T.Denied = Denied;
+
+  /* ───────── 체험 모드 ───────── */
+  class DemoStore {
+    constructor() {
+      this.mode = "demo";
+      this.key = "tt-demo-v1";
+      this.gkey = "tt-demo-grants-v1";
+      this.subs = new Set();
+      this.mem = null;
+      window.addEventListener("storage", (e) => { if (e.key === this.key) { this.mem = null; this.emit(); } });
+    }
+    async init() {}
+    read() {
+      if (this.mem) return this.mem;
+      let d = null;
+      try { d = JSON.parse(localStorage.getItem(this.key) || "null"); } catch (e) {}
+      if (!d || !d.schools) d = { schools: {} };
+      this.mem = d;
+      return d;
+    }
+    write() { try { localStorage.setItem(this.key, JSON.stringify(this.mem)); } catch (e) {} this.emit(); }
+    grants() { try { const v = localStorage.getItem(this.gkey); if (v) return JSON.parse(v); } catch (e) {} return T.clone(this.gmem || {}); }
+    setGrants(g) { this.gmem = T.clone(g); try { localStorage.setItem(this.gkey, JSON.stringify(g)); } catch (e) {} }
+    box(sid) { return this.read().schools[sid] || null; }
+    async ensureExample() {
+      if (this.box(T.EXAMPLE_ID)) return;
+      const { school, slots } = T.exampleSchool();
+      const locks = { [ADMIN]: await T.codeHash(T.EXAMPLE_ID, ADMIN, T.EXAMPLE_CODES.admin) };
+      const codes = {};
+      for (const p of school.people) {
+        locks[p.id] = await T.codeHash(T.EXAMPLE_ID, p.id, T.EXAMPLE_CODES.teacher);
+        codes[p.id] = T.EXAMPLE_CODES.teacher;
+      }
+      this.read().schools[T.EXAMPLE_ID] = { doc: school, slots, locks, codes };
+      this.write();
+    }
+    async resetExample() { delete this.read().schools[T.EXAMPLE_ID]; const g = this.grants(); delete g[T.EXAMPLE_ID]; this.setGrants(g); await this.ensureExample(); }
+    async getSchool(sid) { if (sid === T.EXAMPLE_ID) await this.ensureExample(); const b = this.box(sid); return b ? T.clone(b.doc) : null; }
+    watch(sid, cb) {
+      const fn = () => { const b = this.box(sid); cb({ school: b ? T.clone(b.doc) : null, slots: b ? T.clone(b.slots) : {} }); };
+      this.subs.add(fn);
+      setTimeout(fn, 0);
+      return () => this.subs.delete(fn);
+    }
+    emit() { this.subs.forEach((fn) => fn()); }
+    can(sid, pid) {
+      const b = this.box(sid); const g = this.grants()[sid] || {};
+      return !!(b && b.locks[pid] && g[pid] === b.locks[pid]);
+    }
+    need(sid, pid) { if (!(this.can(sid, pid) || this.can(sid, ADMIN))) throw new Denied(); }
+    async createSchool(sid, doc, adminCode) {
+      if (this.box(sid)) throw Object.assign(new Error("이미 있는 학교 코드입니다."), { code: "exists" });
+      const h = await T.codeHash(sid, ADMIN, adminCode);
+      this.read().schools[sid] = { doc, slots: {}, locks: { [ADMIN]: h }, codes: {} };
+      this.write();
+      await this.login(sid, ADMIN, adminCode);
+    }
+    async login(sid, pid, code) {
+      const b = this.box(sid);
+      const h = await T.codeHash(sid, pid, code);
+      if (!b || !b.locks[pid] || b.locks[pid] !== h) return false;
+      const g = this.grants(); (g[sid] = g[sid] || {})[pid] = h; this.setGrants(g);
+      return true;
+    }
+    async logout(sid, pid) { const g = this.grants(); if (g[sid]) delete g[sid][pid]; this.setGrants(g); }
+    async check(sid, pid) { return this.can(sid, pid); }
+    async saveSchool(sid, doc) { this.need(sid, ADMIN); this.box(sid).doc = T.clone(doc); this.write(); }
+    async saveSlots(sid, pid, e) { this.need(sid, pid); const b = this.box(sid); b.slots[pid] = { e: T.clone(e), at: Date.now() }; this.write(); }
+    async setCode(sid, pid, code) {
+      this.need(sid, ADMIN);
+      const b = this.box(sid);
+      b.locks[pid] = await T.codeHash(sid, pid, code);
+      if (pid !== ADMIN) b.codes[pid] = T.cleanCode(code);
+      this.write();
+    }
+    async getCodes(sid) { this.need(sid, ADMIN); return T.clone(this.box(sid).codes || {}); }
+    async removePerson(sid, pid) {
+      this.need(sid, ADMIN);
+      const b = this.box(sid);
+      delete b.locks[pid]; delete b.codes[pid]; delete b.slots[pid];
+      this.write();
+    }
+    async clearSlots(sid, pids) {
+      this.need(sid, ADMIN);
+      const b = this.box(sid);
+      (pids || Object.keys(b.slots)).forEach((p) => delete b.slots[p]);
+      this.write();
+    }
+    async putAllSlots(sid, slots) {
+      this.need(sid, ADMIN);
+      this.box(sid).slots = T.clone(slots);
+      this.write();
+    }
+  }
+
+  /* ───────── Cloudflare (Worker + Durable Object) ─────────
+     인증코드는 서버가 확인하고, 맞으면 이 기기에 '입장권(token)'을 줍니다.
+     입장권은 이 브라우저에만 보관하며, 코드가 바뀌면 서버에서 바로 무효가 됩니다. */
+  class CloudStore {
+    constructor(base, info) {
+      this.mode = "cloud";
+      this.base = base;
+      this.info = info || {};
+    }
+    async init() {}
+    tkKey(sid) { return `tt-tok-${sid}`; }
+    tokens(sid) { try { return JSON.parse(localStorage.getItem(this.tkKey(sid)) || "{}"); } catch (e) { return (this.tmem && this.tmem[sid]) || {}; } }
+    setToken(sid, pid, token) {
+      const t = this.tokens(sid);
+      if (token) t[pid] = token; else delete t[pid];
+      (this.tmem = this.tmem || {})[sid] = t;
+      try { localStorage.setItem(this.tkKey(sid), JSON.stringify(t)); } catch (e) {}
+    }
+    async api(sid, method, path, body) {
+      let r;
+      try {
+        r = await fetch(`${this.base}/api/s/${encodeURIComponent(sid)}${path}`, {
+          method,
+          headers: { "content-type": "application/json", "x-tt-tokens": Object.values(this.tokens(sid)).join(" ") },
+          body: body === undefined ? undefined : JSON.stringify(body),
+          cache: "no-store",
+        });
+      } catch (e) { throw new Error("서버에 연결하지 못했습니다. 인터넷 연결을 확인해 주세요."); }
+      let j = {};
+      try { j = await r.json(); } catch (e) {}
+      if (r.ok) return j;
+      if (r.status === 403 && j.error === "denied") throw new Denied(j.message);
+      throw Object.assign(new Error(j.message || `서버 오류 (${r.status})`), { code: j.error, status: r.status });
+    }
+    async getSchool(sid) { return (await this.api(sid, "GET", "/state")).school; }
+    watch(sid, cb) {
+      let closed = false, ws = null, retry = 0, pingT = null, reT = null;
+      const st = { school: undefined, slots: {} };
+      const emit = () => cb({ school: st.school, slots: T.clone(st.slots) });
+      const load = async () => {
+        try { const j = await this.api(sid, "GET", "/state"); if (closed) return; st.school = j.school; st.slots = j.slots || {}; emit(); }
+        catch (e) { if (!closed && st.school === undefined) cb({ error: e }); }
+      };
+      const wsUrl = (this.base ? this.base.replace(/^http/, "ws") : `${location.protocol === "https:" ? "wss" : "ws"}://${location.host}`) + `/api/s/${encodeURIComponent(sid)}/ws`;
+      const connect = () => {
+        if (closed) return;
+        clearTimeout(reT);
+        try { ws = new WebSocket(wsUrl); } catch (e) { ws = null; return again(); }
+        ws.onopen = () => { if (retry) load(); retry = 0; };
+        ws.onmessage = (ev) => {
+          if (ev.data === "pong") return;
+          let m; try { m = JSON.parse(ev.data); } catch (e) { return; }
+          if (m.t === "school") st.school = m.school;
+          else if (m.t === "slots") { if (m.e) st.slots[m.pid] = { e: m.e, at: m.at }; else delete st.slots[m.pid]; }
+          else if (m.t === "all") st.slots = m.slots || {};
+          else return;
+          if (st.school !== undefined) emit();
+        };
+        ws.onclose = () => { ws = null; again(); };
+        ws.onerror = () => {};
+      };
+      const again = () => {
+        if (closed) return;
+        retry++;
+        if (retry >= 2) load(); // 연결이 끊긴 동안 바뀐 것은 다시 받아 옴
+        reT = setTimeout(connect, Math.min(30000, 1000 * 2 ** Math.min(retry, 5)));
+      };
+      const onVis = () => { if (document.visibilityState === "visible" && !closed) { load(); if (!ws) connect(); } };
+      document.addEventListener("visibilitychange", onVis);
+      pingT = setInterval(() => { try { ws && ws.readyState === 1 && ws.send("ping"); } catch (e) {} }, 25000);
+      load();
+      connect();
+      return () => { closed = true; clearInterval(pingT); clearTimeout(reT); document.removeEventListener("visibilitychange", onVis); try { ws && ws.close(); } catch (e) {} };
+    }
+    async createSchool(sid, doc, adminCode) {
+      const j = await this.api(sid, "POST", "/create", { doc, adminCode: T.cleanCode(adminCode) });
+      this.setToken(sid, ADMIN, j.token);
+    }
+    async login(sid, pid, code) {
+      const j = await this.api(sid, "POST", "/login", { pid, code: T.cleanCode(code) });
+      if (!j.ok) return false;
+      this.setToken(sid, pid, j.token);
+      return true;
+    }
+    async logout(sid, pid) {
+      const tok = this.tokens(sid)[pid];
+      this.setToken(sid, pid, null);
+      if (tok) { try { await this.api(sid, "POST", "/logout", { token: tok }); } catch (e) {} }
+    }
+    async check(sid, pid) {
+      if (!this.tokens(sid)[pid]) return false;
+      try {
+        const now = Date.now();
+        if (!this.ck || this.ck.sid !== sid || now - this.ck.at > 3000) this.ck = { sid, at: now, p: this.api(sid, "GET", "/check") };
+        const ok = (await this.ck.p).pids.includes(pid);
+        if (!ok) this.setToken(sid, pid, null);
+        return ok;
+      } catch (e) { return true; } // 연결 문제면 일단 그대로 두고, 저장할 때 다시 확인
+    }
+    async saveSchool(sid, doc) { await this.api(sid, "PUT", "/school", { doc }); }
+    async saveSlots(sid, pid, e) { await this.api(sid, "PUT", `/slots/${encodeURIComponent(pid)}`, { e }); }
+    async setCode(sid, pid, code) {
+      const j = await this.api(sid, "POST", "/code", { pid, code: T.cleanCode(code) });
+      if (pid === ADMIN && j.token) this.setToken(sid, ADMIN, j.token);
+    }
+    async getCodes(sid) { return (await this.api(sid, "GET", "/codes")).codes || {}; }
+    async removePerson(sid, pid) { await this.api(sid, "POST", "/remove", { pid }); }
+    async clearSlots(sid, pids) { await this.api(sid, "POST", "/clear", pids ? { pids } : {}); }
+    async putAllSlots(sid, slots) { await this.api(sid, "PUT", "/all-slots", { slots }); }
+  }
+
+  // 어떤 저장소를 쓸지: SERVER true = 서버 필수, false = 체험 모드, "auto" = 서버가 있으면 서버
+  T.pickStore = async () => {
+    const cfg = window.TT_CONFIG || {};
+    const q = new URLSearchParams(location.search);
+    if (cfg.SERVER === false || q.has("demo")) return new DemoStore();
+    const base = String(cfg.API_BASE || "").replace(/\/+$/, "");
+    if (!base && !/^https?:$/.test(location.protocol)) {
+      if (cfg.SERVER === true) throw new Error("index.html을 파일로 열었습니다. 배포한 주소(https://…)로 들어오세요.");
+      return new DemoStore();
+    }
+    try {
+      const ctl = new AbortController();
+      const t = setTimeout(() => ctl.abort(), 6000);
+      const r = await fetch(`${base}/api/health`, { cache: "no-store", signal: ctl.signal });
+      clearTimeout(t);
+      const j = await r.json();
+      if (j && j.app === "tt") return new CloudStore(base, j);
+    } catch (e) {}
+    if (cfg.SERVER === true) throw new Error("시간표 서버에 연결하지 못했습니다. 잠시 뒤 새로고침해 주세요.");
+    return new DemoStore();
+  };
+})();
+
+</script>
+<script>
+/* 시간표 그리기: 주간 표(학급·사람·장소), 한눈에 보기 표, 출력용 종이 */
+(function () {
+  const T = (window.TT = window.TT || {});
+  const E = T.esc;
+
+  // 한 칸 기본 내용 (조회·출력)
+  T.cellContent = (sc, kind, id, items) => {
+    if (!items.length) return { html: "", cls: "" };
+    if (items.length > 1) {
+      const lines = items.map((it) => (kind === "class" ? `${T.subjectShort(sc, it.s)}·${T.personName(sc, it.pid)}` : `${it.cls} ${T.subjectShort(sc, it.s)}`));
+      return { html: `<b>겹침</b>${lines.map((l) => `<small>${E(l)}</small>`).join("")}`, cls: "conflict" };
+    }
+    const it = items[0];
+    const subj = T.subjectShort(sc, it.s);
+    const style = T.colorVars(T.subjectColor(sc, it.s));
+    let main = "", subs = [];
+    if (kind === "class") {
+      main = subj;
+      const hr = T.homeroomOf(sc, id);
+      if (!hr || hr.id !== it.pid) subs.push(T.personName(sc, it.pid));
+      if (it.r) subs.push(T.roomName(sc, it.r));
+    } else if (kind === "person") {
+      main = it.cls;
+      subs.push(subj + (it.r ? ` · ${T.roomName(sc, it.r)}` : ""));
+    } else {
+      main = it.cls;
+      subs.push(`${subj} · ${T.personName(sc, it.pid)}`);
+    }
+    return { html: `<b>${E(main)}</b>${subs.map((s) => `<small>${E(s)}</small>`).join("")}`, cls: "", style };
+  };
+
+  /* 주간 표. opts.cell(d,p) → {html, cls, style, attrs} 로 칸을 바꿀 수 있음 (입력 화면) */
+  T.gridHTML = (sc, idx, kind, id, opts = {}) => {
+    const days = T.dayList(sc), periods = T.periodList(sc);
+    const lunch = Number(sc.lunchAfter) || 0;
+    const head = `<thead><tr><th class="g-corner">교시</th>${days.map((d) => `<th>${T.DAYS[d]}</th>`).join("")}</tr></thead>`;
+    const rows = periods.map((p) => {
+      const t = T.timeOf(sc, p);
+      const cells = days.map((d) => {
+        const c = opts.cell ? opts.cell(d, p) : T.cellContent(sc, kind, id, T.cellItems(idx, kind, id, d, p));
+        const inner = c.html || c.cls ? `<div class="cell ${c.cls || ""}" style="${c.style || ""}">${c.html || ""}</div>` : "";
+        return `<td ${c.attrs || ""}>${inner}</td>`;
+      }).join("");
+      const row = `<tr><th class="g-p"><b>${p}</b>${t && opts.times !== false ? `<small>${E(t.s)}~${E(t.e)}</small>` : ""}</th>${cells}</tr>`;
+      const lunchRow = lunch && p === lunch && p < periods.length
+        ? `<tr class="g-lunch"><th>점심</th><td colspan="${days.length}">점심시간</td></tr>` : "";
+      return row + lunchRow;
+    }).join("");
+    return `<table class="g">${head}<tbody>${rows}</tbody></table>`;
+  };
+
+  T.hoursHTML = (sc, idx, kind, id) => {
+    const h = T.hoursBy(idx, kind, id);
+    if (!h.total) return "";
+    const order = (sc.subjects || []).map((s) => s.id);
+    const ids = Object.keys(h.by).sort((a, b) => order.indexOf(a) - order.indexOf(b));
+    return `<div class="hours"><span style="background:transparent;padding-left:0">주 <b>${h.total}</b>시간</span>${ids
+      .map((s) => `<span style="${T.colorVars(T.subjectColor(sc, s))}"><i></i>${E(T.subjectShort(sc, s))} <b>${h.by[s]}</b></span>`).join("")}</div>`;
+  };
+
+  T.titleOf = (sc, kind, id) => {
+    if (kind === "class") return T.className(id);
+    if (kind === "person") return `${T.personName(sc, id)} 선생님`;
+    return T.roomName(sc, id);
+  };
+  T.subtitleOf = (sc, kind, id) => {
+    if (kind === "class") { const hr = T.homeroomOf(sc, id); return hr ? `담임 ${T.personName(sc, hr.id)}` : ""; }
+    if (kind === "person") return T.personDesc(sc, id);
+    const r = id.startsWith("hr:") ? null : T.room(sc, id);
+    return r ? (r.multi ? "특별실 · 여러 학급 함께 사용" : "특별실") : "학급 교실";
+  };
+
+  /* 한눈에 보기: 줄 = 학급/사람/장소, 칸 = 요일×교시 */
+  T.matrixRows = (sc, kind, filter = {}) => {
+    if (kind === "class") {
+      return T.classList(sc).filter((c) => !filter.grade || c.g === filter.grade).map((c) => ({ id: c.id, label: c.id, sub: T.homeroomOf(sc, c.id) ? T.personName(sc, T.homeroomOf(sc, c.id).id) : "", group: c.g }));
+    }
+    if (kind === "person") {
+      return T.peopleSorted(sc).filter((p) => !filter.roles || filter.roles.includes(p.role))
+        .map((p) => ({ id: p.id, label: T.personName(sc, p.id), sub: p.role === "homeroom" ? p.cls || "" : T.ROLES[p.role], group: p.role }));
+    }
+    return T.roomList(sc).filter((r) => (filter.special === undefined ? true : r.special === filter.special))
+      .map((r) => ({ id: r.id, label: r.name, sub: "", group: r.special ? "s" : "h" }));
+  };
+  T.matrixHTML = (sc, idx, kind, rows, opts = {}) => {
+    const days = T.dayList(sc), periods = T.periodList(sc);
+    const head1 = `<tr><th rowspan="2" style="width:var(--mx-lw,92px)">${kind === "class" ? "학급" : kind === "person" ? "선생님" : "장소"}</th>${days
+      .map((d) => `<th class="mx-day" colspan="${periods.length}">${T.DAYS[d]}</th>`).join("")}</tr>`;
+    const head2 = `<tr>${days.map(() => periods.map((p, i) => `<th class="${i === 0 ? "mx-day" : ""}">${p}</th>`).join("")).join("")}</tr>`;
+    let prev = null;
+    const body = rows.map((r) => {
+      const sep = prev !== null && r.group !== prev ? "gsep" : "";
+      prev = r.group;
+      const tds = days.map((d) => periods.map((p, i) => {
+        const items = T.cellItems(idx, kind, r.id, d, p);
+        const c1 = i === 0 ? "d1" : "";
+        if (!items.length) return `<td class="${c1}"></td>`;
+        const isConflict = items.length > 1 && !(kind === "room" && (r.id.startsWith("hr:") ? new Set(items.map((x) => x.cls)).size < 2 : T.room(sc, r.id)?.multi));
+        if (isConflict) return `<td class="${c1} x" title="겹침">!</td>`;
+        const it = items[0];
+        const style = T.colorVars(T.subjectColor(sc, it.s));
+        let txt = "", sub = "";
+        if (kind === "class") { txt = T.subjectShort(sc, it.s); }
+        else if (kind === "person") { txt = it.cls; sub = opts.compact ? "" : T.subjectShort(sc, it.s); }
+        else { txt = items.length > 1 ? items.map((x) => x.cls).join(",") : it.cls; }
+        return `<td class="${c1} f" style="${style}" title="${E(`${it.cls} ${T.subjectName(sc, it.s)} · ${T.personName(sc, it.pid)}`)}">${E(txt.length > 3 && kind === "class" ? txt.slice(0, 2) : txt)}${sub ? `<small>${E(sub.slice(0, 3))}</small>` : ""}</td>`;
+      }).join("")).join("");
+      return `<tr class="${sep}"><th title="${E(r.label)}">${E(r.label)}${r.sub && opts.showSub !== false ? ` <small>${E(r.sub)}</small>` : ""}</th>${tds}</tr>`;
+    }).join("");
+    return `<table class="mx"><thead>${head1}${head2}</thead><tbody>${body}</tbody></table>`;
+  };
+
+  /* ───── 출력용 종이 ───── */
+  T.PAPER = { landscape: { w: 1123, h: 794, label: "A4 가로", mm: [297, 210] }, portrait: { w: 794, h: 1123, label: "A4 세로", mm: [210, 297] } };
+  T.termLabel = (sc) => `${sc.year ? sc.year + "학년도 " : ""}${sc.term || ""}`.trim();
+
+  const pageWrap = (sc, P, title, kicker, body, bodyStyle = "", foot = "") => `
+    <div class="page" style="width:${P.w}px;height:${P.h}px">
+      <div class="page-head">
+        <div><p class="page-kicker">${E(kicker)}</p><div class="page-title">${E(title)}</div></div>
+        <div class="page-school">${E(sc.name)}<small>${E(T.termLabel(sc))}</small></div>
+      </div>
+      <div class="page-body" style="${bodyStyle}">${body}</div>
+      <div class="page-foot"><span>${E(foot)}</span><span class="pg-no"></span></div>
+    </div>`;
+
+  // 한 장에 몇 개를 어떻게 놓을지 (가로 cols × 세로 rows)
+  T.arrange = (n, orient) => {
+    const P = T.PAPER[orient];
+    const W = P.w - 64, H = P.h - 120;
+    let best = null;
+    for (let cols = 1; cols <= n; cols++) {
+      const rows = Math.ceil(n / cols);
+      const cw = W / cols, ch = H / rows;
+      const ideal = 1.25; // 시간표 한 개의 알맞은 가로:세로
+      const score = Math.abs(Math.log((cw / ch) / ideal)) + (cols * rows - n) * 0.08;
+      if (!best || score < best.score) best = { cols, rows, score };
+    }
+    return best;
+  };
+  const fsFor = (cols, rows, orient) => {
+    const P = T.PAPER[orient];
+    const cw = (P.w - 64) / cols, ch = (P.h - 120) / rows;
+    const s = Math.min(cw / 640, ch / 470);
+    return Math.max(8.5, Math.min(15, 13.5 * Math.sqrt(s) * (s < 0.6 ? 1.05 : 1)));
+  };
+
+  // 칸 높이에 맞춰 한 칸에 몇 줄까지 쓸지 (1: 과목만, 2: +한 줄, 3: 모두)
+  const linesFor = (sc, P, rows, fs, withHours) => {
+    const bodyH = P.h - 150 - (rows - 1) * 14;
+    const unitH = bodyH / rows;
+    const gridH = unitH - fs * 1.8 - (withHours ? fs * 2.6 : 0) - 8;
+    const rowH = gridH / (T.periodList(sc).length + 1 + (Number(sc.lunchAfter) ? 0.7 : 0));
+    return rowH >= fs * 3.5 ? 3 : rowH >= fs * 2.5 ? 2 : 1;
+  };
+  const unitHTML = (sc, idx, kind, id, fs, withHours, lines = 3) => `
+    <div class="unit l${lines}" style="--g-fs:${fs}px;--u-fs:${(fs * 1.2).toFixed(1)}px;--g-pw:${Math.round(fs * 4.2)}px">
+      <div class="unit-title"><span>${E(T.titleOf(sc, kind, id))}</span><small>${E(T.subtitleOf(sc, kind, id))}</small></div>
+      <div class="g-box">${T.gridHTML(sc, idx, kind, id, { times: fs >= 10 })}</div>
+      ${withHours ? T.hoursHTML(sc, idx, kind, id) : ""}
+    </div>`;
+
+  /* 출력 작업 → 종이 HTML 목록
+     job: { type: 'class'|'person'|'room'|'grade'|'all', ids:[], grades:[], orient, perPage, basis, hours } */
+  T.buildPages = (sc, idx, job) => {
+    const P = T.PAPER[job.orient] || T.PAPER.landscape;
+    const pages = [];
+    const term = T.termLabel(sc);
+    const kindName = { class: "학급별 시간표", person: "교사·강사별 시간표", room: "교실별 시간표" };
+    if (["class", "person", "room"].includes(job.type)) {
+      const per = Math.max(1, Number(job.perPage) || 1);
+      const lay = per === 1 ? { cols: 1, rows: 1 } : T.arrange(per, job.orient);
+      const fs = fsFor(lay.cols, lay.rows, job.orient);
+      for (let i = 0; i < job.ids.length; i += per) {
+        const chunk = job.ids.slice(i, i + per);
+        const f = per === 1 ? Math.min(16, fs * 1.1) : fs;
+        const lines = linesFor(sc, P, lay.rows, f, job.hours !== false);
+        const body = chunk.map((id) => unitHTML(sc, idx, job.type, id, f, job.hours !== false, lines)).join("");
+        const title = per === 1 ? T.titleOf(sc, job.type, chunk[0]) + " 시간표" : kindName[job.type];
+        pages.push(pageWrap(sc, P, title, per === 1 ? kindName[job.type] : `한 장에 ${per}개`, per === 1 ? body.replace('class="unit-title"', 'class="unit-title" hidden') : body,
+          `grid-template-columns:repeat(${lay.cols},minmax(0,1fr));grid-template-rows:repeat(${lay.rows},minmax(0,1fr))`,
+          per === 1 ? T.subtitleOf(sc, job.type, chunk[0]) : ""));
+      }
+    } else if (job.type === "grade") {
+      (job.grades || []).forEach((g) => {
+        const ids = T.classesOfGrade(sc, g).map((c) => c.id);
+        if (!ids.length) return;
+        if (job.gradeStyle === "matrix") {
+          const rows = T.matrixRows(sc, "class", { grade: g });
+          pages.push(matrixPage(sc, idx, P, "class", rows, `${g}학년 시간표`, "학년별 한눈에 보기", job));
+          return;
+        }
+        const lay = T.arrange(ids.length, job.orient);
+        const fs = fsFor(lay.cols, lay.rows, job.orient);
+        const lines = linesFor(sc, P, lay.rows, fs, job.hours !== false);
+        const body = ids.map((id) => unitHTML(sc, idx, "class", id, fs, job.hours !== false, lines)).join("");
+        pages.push(pageWrap(sc, P, `${g}학년 시간표`, "학년별 시간표", body,
+          `grid-template-columns:repeat(${lay.cols},minmax(0,1fr));grid-template-rows:repeat(${lay.rows},minmax(0,1fr))`));
+      });
+    } else if (job.type === "all") {
+      const basis = job.basis || "class";
+      const rows = T.matrixRows(sc, basis, basis === "room" ? { special: job.roomSpecial ? true : undefined } : {});
+      const perPage = job.orient === "landscape" ? 26 : 42;
+      const nPages = Math.max(1, Math.ceil(rows.length / perPage));
+      const each = Math.ceil(rows.length / nPages);
+      const name = { class: "전체 시간표 (학급 기준)", person: "전체 시간표 (교사·강사 기준)", room: "전체 시간표 (교실 기준)" }[basis];
+      for (let i = 0; i < nPages; i++) {
+        pages.push(matrixPage(sc, idx, P, basis, rows.slice(i * each, (i + 1) * each), name, nPages > 1 ? `한눈에 보기 · ${i + 1}/${nPages}` : "한눈에 보기", job));
+      }
+    }
+    return pages;
+  };
+
+  const matrixPage = (sc, idx, P, kind, rows, title, kicker, job) => {
+    const cols = T.dayList(sc).length * T.periodList(sc).length;
+    const usableW = P.w - 64, usableH = P.h - 130;
+    const lw = kind === "person" ? 108 : kind === "room" ? 96 : 88;
+    const cw = (usableW - lw) / cols;
+    const rh = Math.max(16, Math.min(46, Math.floor((usableH - 44) / Math.max(rows.length, 1))));
+    const fs = Math.max(8, Math.min(13, Math.min(cw / 2.6, rh / 2.1)));
+    const compact = kind === "person" && rh < 28;
+    return pageWrap(sc, P, title, kicker,
+      `<div class="mx-box" style="--mx-lw:${lw}px;--mx-rh:${rh}px;--mx-fs:${fs.toFixed(1)}px">${T.matrixHTML(sc, idx, kind, rows, { compact, showSub: kind !== "room" })}</div>`,
+      "display:block");
+  };
+
+  // 인증코드 안내문
+  T.buildSlipPages = (sc, list, siteUrl) => {
+    const P = T.PAPER.portrait;
+    const per = 14;
+    const pages = [];
+    for (let i = 0; i < list.length; i += per) {
+      const body = `<div class="slips">${list.slice(i, i + per).map((x) => `
+        <div class="slip"><small>${E(sc.name)} 시간표 · 학교 코드 <b>${E(x.sid)}</b></small>
+          <b>${E(x.name)} <small>${E(x.desc)}</small></b>
+          <span class="code">${E(x.code)}</span>
+          <small>${E(siteUrl)} 에서 '입력' → 이름 선택 → 이 코드를 넣으세요. 다른 사람에게 알려 주지 마세요.</small></div>`).join("")}</div>`;
+      pages.push(pageWrap(sc, P, "시간표 입력 인증코드", "선생님별로 잘라서 나눠 주세요", body, "display:block"));
+    }
+    return pages;
+  };
+})();
+
+</script>
+<script>
+/* 출력: PDF · JPG · 인쇄 */
+(function () {
+  const T = (window.TT = window.TT || {});
+  const LIBS = {
+    html2canvas: "https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js",
+    jspdf: "https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js",
+    jszip: "https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js",
+  };
+  const loaded = {};
+  T.loadScript = (src) =>
+    (loaded[src] = loaded[src] || new Promise((res, rej) => {
+      const s = document.createElement("script");
+      s.src = src;
+      s.onload = res;
+      s.onerror = () => { delete loaded[src]; rej(new Error("출력 도구를 불러오지 못했습니다. 인터넷 연결을 확인하세요.")); };
+      document.head.appendChild(s);
+    }));
+
+  // 파일 저장: Claude 화면 안이면 downloads 기능, 아니면 브라우저 내려받기
+  let dl;
+  const downloads = () => (dl = dl || (window.claude && window.claude.use ? window.claude.use("downloads").catch(() => null) : Promise.resolve(null)));
+  T.saveFile = async (blob, filename) => {
+    const d = await downloads();
+    if (d) {
+      try { await d.save({ filename, data: blob }); return true; }
+      catch (e) { if (e && e.code === "declined") return false; }
+    }
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+    return true;
+  };
+
+  // 종이 HTML → 캔버스
+  async function renderPages(pagesHtml, onProgress) {
+    await T.loadScript(LIBS.html2canvas);
+    if (document.fonts && document.fonts.ready) await document.fonts.ready;
+    const host = document.createElement("div");
+    host.style.cssText = "position:fixed;left:-30000px;top:0;";
+    document.body.appendChild(host);
+    const out = [];
+    try {
+      for (let i = 0; i < pagesHtml.length; i++) {
+        host.innerHTML = pagesHtml[i];
+        const el = host.firstElementChild;
+        T.numberPage(el, i, pagesHtml.length);
+        onProgress && onProgress(i + 1, pagesHtml.length);
+        const canvas = await window.html2canvas(el, { scale: 2, backgroundColor: "#ffffff", logging: false, useCORS: true, windowWidth: el.offsetWidth + 40 });
+        out.push(canvas);
+      }
+    } finally { host.remove(); }
+    return out;
+  }
+  T.numberPage = (el, i, n) => { const s = el.querySelector(".pg-no"); if (s) s.textContent = n > 1 ? `${i + 1} / ${n}` : ""; };
+
+  T.exportPDF = async (pagesHtml, orient, filename, onProgress) => {
+    const canvases = await renderPages(pagesHtml, onProgress);
+    await T.loadScript(LIBS.jspdf);
+    const [mw, mh] = T.PAPER[orient].mm;
+    const pdf = new window.jspdf.jsPDF({ orientation: orient, unit: "mm", format: "a4" });
+    canvases.forEach((c, i) => {
+      if (i) pdf.addPage("a4", orient);
+      pdf.addImage(c.toDataURL("image/jpeg", 0.92), "JPEG", 0, 0, mw, mh);
+    });
+    return T.saveFile(pdf.output("blob"), filename + ".pdf");
+  };
+
+  T.exportJPG = async (pagesHtml, orient, filename, onProgress) => {
+    const canvases = await renderPages(pagesHtml, onProgress);
+    const blobs = await Promise.all(canvases.map((c) => new Promise((r) => c.toBlob(r, "image/jpeg", 0.92))));
+    if (blobs.length === 1) return T.saveFile(blobs[0], filename + ".jpg");
+    await T.loadScript(LIBS.jszip);
+    const zip = new window.JSZip();
+    blobs.forEach((b, i) => zip.file(`${filename}_${String(i + 1).padStart(2, "0")}.jpg`, b));
+    return T.saveFile(await zip.generateAsync({ type: "blob" }), filename + "_JPG.zip");
+  };
+
+  T.printPages = (pagesHtml, orient) => {
+    let root = document.getElementById("print-root");
+    if (!root) { root = document.createElement("div"); root.id = "print-root"; document.body.appendChild(root); }
+    root.innerHTML = pagesHtml.join("");
+    [...root.children].forEach((el, i) => T.numberPage(el, i, pagesHtml.length));
+    let st = document.getElementById("print-page-style");
+    if (!st) { st = document.createElement("style"); st.id = "print-page-style"; document.head.appendChild(st); }
+    st.textContent = `@page { size: A4 ${orient}; margin: 0; } @media print { #print-root .page { width: ${T.PAPER[orient].mm[0]}mm !important; height: ${T.PAPER[orient].mm[1] - 0.5}mm !important; } }`;
+    document.body.classList.add("printing");
+    const done = () => { document.body.classList.remove("printing"); root.innerHTML = ""; window.removeEventListener("afterprint", done); };
+    window.addEventListener("afterprint", done);
+    setTimeout(() => { try { window.print(); } catch (e) { T.toast("이 화면에서는 인쇄가 막혀 있습니다. PDF로 저장한 뒤 인쇄하세요.", "error"); } setTimeout(done, 1500); }, 60);
+  };
+})();
+
+</script>
+<script>
+/* 화면 공통 부품: 알림, 대화상자, 확인창 */
+(function () {
+  const T = (window.TT = window.TT || {});
+  T.$ = (s, r = document) => r.querySelector(s);
+  T.$$ = (s, r = document) => [...r.querySelectorAll(s)];
+
+  let toastTimer;
+  T.toast = (msg, kind = "info") => {
+    let t = T.$("#toast");
+    if (!t) {
+      t = document.createElement("div");
+      t.id = "toast";
+      t.setAttribute("role", "status");
+      t.setAttribute("aria-live", "polite");
+      document.body.appendChild(t);
+    }
+    t.className = "toast toast-" + kind;
+    t.textContent = msg;
+    t.hidden = false;
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => (t.hidden = true), kind === "error" ? 5000 : 2600);
+  };
+
+  T.modal = ({ title, body, wide = false, onClose }) => {
+    const wrap = document.createElement("div");
+    wrap.className = "modal-back";
+    wrap.innerHTML = `
+      <div class="modal ${wide ? "modal-wide" : ""}" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+        <div class="modal-head"><h2 id="modal-title">${T.esc(title)}</h2>
+          <button type="button" class="icon-btn" data-close aria-label="닫기">✕</button></div>
+        <div class="modal-body">${body}</div>
+      </div>`;
+    document.body.appendChild(wrap);
+    document.body.classList.add("no-scroll");
+    let closed = false;
+    const close = () => {
+      if (closed) return;
+      closed = true;
+      wrap.remove();
+      if (!T.$(".modal-back")) document.body.classList.remove("no-scroll");
+      document.removeEventListener("keydown", onKey);
+      onClose && onClose();
+    };
+    const onKey = (e) => { if (e.key === "Escape" && wrap === T.$$(".modal-back").pop()) close(); };
+    document.addEventListener("keydown", onKey);
+    let downOnBack = false;
+    wrap.addEventListener("pointerdown", (e) => { downOnBack = e.target === wrap; });
+    wrap.addEventListener("click", (e) => {
+      if (e.target.closest("[data-close]")) return close();
+      if (e.target === wrap && downOnBack && !wrap.querySelector("input:not([type=hidden]), select, textarea")) close();
+    });
+    const first = wrap.querySelector("input, select, textarea");
+    setTimeout(() => first && first.focus(), 30);
+    return { el: wrap, close };
+  };
+
+  T.confirm = (message, { ok = "확인", danger = false } = {}) =>
+    new Promise((resolve) => {
+      let answered = false;
+      const m = T.modal({
+        title: "확인",
+        body: `<p style="margin:0">${T.esc(message).replace(/\n/g, "<br>")}</p>
+          <div class="row-end"><button type="button" class="btn ghost" data-close>취소</button>
+          <button type="button" class="btn ${danger ? "danger" : "primary"}" data-ok>${T.esc(ok)}</button></div>`,
+        onClose: () => { if (!answered) resolve(false); },
+      });
+      m.el.querySelector("[data-ok]").addEventListener("click", () => { answered = true; resolve(true); m.close(); });
+    });
+
+  T.busy = async (btn, fn, label = "처리 중…") => {
+    const html = btn ? btn.innerHTML : "";
+    if (btn) { btn.disabled = true; btn.textContent = label; }
+    try { return await fn(); }
+    finally { if (btn && btn.isConnected) { btn.disabled = false; btn.innerHTML = html; } }
+  };
+})();
+
+</script>
+<script>
+/* 화면: 첫 화면 · 조회 · 입력 · 출력 · 기본설정 */
+(function () {
+  const T = window.TT;
+  const E = T.esc;
+  const cfg = window.TT_CONFIG || {};
+  let store = null;
+  const app = document.getElementById("app");
+  const ADMIN = T.ADMIN;
+
+  const A = {
+    ready: false, initError: null,
+    sid: null, school: undefined, slots: {}, idx: null, loadError: null,
+    me: { pid: null, admin: false },
+    tab: "view",
+    view: { kind: "class", id: null, mx: "class", mxGrade: 0 },
+    ed: { actAs: null, mode: null, cls: null, brush: null, room: "", subj: "", wroom: "", wbrush: null, forActor: null },
+    pr: { type: "class", ids: {}, grades: null, orient: "landscape", perPage: 1, basis: "class", gradeStyle: "grid", hours: true },
+    set: { draft: null, dirty: false, sec: "basic", codes: null, codesFor: null },
+    pending: {}, timers: {}, saveState: "", unsub: null,
+  };
+  T.A = A; // 시험·점검용
+
+  /* ───────── 공통 ───────── */
+  const meKey = (sid) => `tt-me-${sid}`;
+  const saveMe = () => { try { localStorage.setItem(meKey(A.sid), JSON.stringify(A.me)); } catch (e) {} };
+  const loadMe = (sid) => { try { return JSON.parse(localStorage.getItem(meKey(sid)) || "null") || { pid: null, admin: false }; } catch (e) { return { pid: null, admin: false }; } };
+  const recent = () => { try { return JSON.parse(localStorage.getItem("tt-recent") || "[]"); } catch (e) { return []; } };
+  const addRecent = (sid, name) => {
+    if (sid === T.EXAMPLE_ID) return;
+    const list = recent().filter((x) => x.sid !== sid);
+    list.unshift({ sid, name });
+    try { localStorage.setItem("tt-recent", JSON.stringify(list.slice(0, 5))); } catch (e) {}
+  };
+  const go = (path) => { if (location.hash !== "#" + path) location.hash = path; else route(); };
+  const sc = () => A.school;
+  const actor = () => A.ed.actAs || A.me.pid;
+  const canEditAs = (pid) => !!pid && (A.me.admin || A.me.pid === pid);
+
+  const after = [];
+  function render() {
+    const a = document.activeElement;
+    const fk = a && a.dataset && a.dataset.f;
+    let sel = null;
+    try { sel = fk ? [a.selectionStart, a.selectionEnd] : null; } catch (e) {}
+    app.innerHTML = A.sid ? shell() : landing();
+    if (fk) {
+      const n = app.querySelector(`[data-f="${CSS.escape(fk)}"]`);
+      if (n) { n.focus(); try { sel && n.setSelectionRange(sel[0], sel[1]); } catch (e) {} }
+    }
+    while (after.length) after.shift()();
+  }
+
+  /* ───────── 길찾기 ───────── */
+  async function route() {
+    const parts = location.hash.replace(/^#\/?/, "").split("/").filter(Boolean);
+    let sid = parts[0] === "s" ? T.cleanSid(decodeURIComponent(parts[1] || "")) : "";
+    if (!sid && cfg.DEFAULT_SCHOOL && !parts.length) sid = T.cleanSid(cfg.DEFAULT_SCHOOL);
+    const tab = (parts[0] === "s" ? parts[2] : "") || "view";
+    A.tab = ["view", "edit", "print", "settings"].includes(tab) ? tab : "view";
+    if (!sid) { closeSchool(); render(); return; }
+    if (sid !== A.sid) openSchool(sid);
+    render();
+  }
+  window.addEventListener("hashchange", route);
+
+  function closeSchool() {
+    if (A.unsub) A.unsub();
+    A.unsub = null; A.sid = null; A.school = undefined; A.slots = {}; A.idx = null;
+  }
+  function openSchool(sid) {
+    closeSchool();
+    Object.assign(A, { sid, school: undefined, slots: {}, idx: null, loadError: null, me: loadMe(sid) });
+    A.ed = { actAs: null, mode: null, cls: null, brush: null, room: "", subj: "", wroom: "", wbrush: null, forActor: null };
+    A.view = { kind: "class", id: null, mx: "class", mxGrade: 0 };
+    A.pr.ids = {}; A.pr.grades = null;
+    A.set = { draft: null, dirty: false, sec: "basic", codes: null, codesFor: null };
+    const go2 = async () => {
+      if (sid === T.EXAMPLE_ID && store.ensureExample) await store.ensureExample();
+      A.unsub = store.watch(sid, onData);
+      // 이 기기에 남은 인증이 아직 유효한지
+      const me = A.me;
+      const [okP, okA] = await Promise.all([me.pid ? store.check(sid, me.pid) : false, me.admin ? store.check(sid, ADMIN) : false]);
+      if (A.sid !== sid) return;
+      if (me.pid && !okP) A.me.pid = null;
+      if (me.admin && !okA) A.me.admin = false;
+      saveMe();
+      render();
+    };
+    go2().catch((e) => { A.loadError = e; render(); });
+  }
+  function onData({ school, slots, error }) {
+    if (error) { A.loadError = error; render(); return; }
+    A.loadError = null;
+    A.school = school;
+    const merged = { ...(slots || {}) };
+    Object.keys(A.pending).forEach((pid) => { if (A.slots[pid]) merged[pid] = A.slots[pid]; });
+    A.slots = merged;
+    if (school) {
+      A.idx = T.buildIndex(school, A.slots);
+      addRecent(A.sid, school.name);
+      document.title = `${school.name} 시간표`;
+      if (!A.set.dirty) A.set.draft = null;
+    }
+    render();
+  }
+
+  /* ───────── 첫 화면 ───────── */
+  function landing() {
+    const demo = store.mode === "demo";
+    const rec = recent();
+    return `<div class="wrap landing">
+      <div class="landing-card">
+        <p class="eyebrow">학교 시간표 · 교실·강사 기준</p>
+        <h1 class="landing-title">${E(cfg.SITE_NAME || "함께 짜는 시간표")}</h1>
+        <p class="muted">교과전담·강사 시간을 먼저 넣으면, 담임 선생님은 남은 칸에 시간표를 채웁니다.
+          학급별·교사별·교실별로 보고, A4 가로·세로 PDF·JPG로 출력하세요.</p>
+        <form class="stack" data-form="join">
+          <label class="field"><span>학교 코드</span>
+            <div class="join"><input name="sid" autocomplete="off" autocapitalize="off" placeholder="예: hanbit-es" data-f="join-sid">
+            <button class="btn primary" type="submit">들어가기</button></div></label>
+          ${rec.length ? `<div class="recent">최근: ${rec.map((r) => `<button type="button" class="chip" data-act="open" data-sid="${E(r.sid)}">${E(r.name || r.sid)} <small>${E(r.sid)}</small></button>`).join("")}</div>` : ""}
+        </form>
+        ${cfg.ALLOW_NEW_SCHOOL !== false && !(store.info && store.info.allowNew === false) ? `<div class="btn-row"><button type="button" class="btn" data-act="new-school">＋ 새 학교 만들기</button>
+          <span class="hint">관리자가 학교를 만들고 학급 수·교시·선생님을 설정합니다.</span></div>` : ""}
+        ${demo ? `<div class="demo-cta">
+          <b style="color:var(--ink)">먼저 체험해 보세요</b>
+          <span>예시 학교(18학급, 교과전담 4명·강사 1명)가 준비되어 있습니다. 관리자 코드 <span class="code">${T.EXAMPLE_CODES.admin}</span> · 선생님 코드 모두 <span class="code">${T.EXAMPLE_CODES.teacher}</span></span>
+          <div><button type="button" class="btn primary" data-act="open" data-sid="${T.EXAMPLE_ID}">체험 학교 열기</button></div>
+        </div>` : ""}
+      </div>
+      <p class="landing-foot">${demo ? "체험 모드 — 자료가 이 브라우저에만 저장됩니다. 학교에서 함께 쓰려면 Cloudflare에 배포하세요." : "학교 코드와 개인 인증코드로 자기 시간표만 고칠 수 있습니다. 다른 선생님이 고친 내용은 바로 보입니다."}</p>
+    </div>`;
+  }
+
+  function openNewSchool() {
+    const m = T.modal({
+      title: "새 학교 만들기",
+      body: `<form class="stack" id="ns-form">
+        <label class="field"><span>학교 이름</span><input name="name" required placeholder="예: 대전한빛초등학교"></label>
+        <label class="field"><span>학교 코드 <small>영문 소문자·숫자·- (3~30자) · 선생님들이 들어올 때 씁니다</small></span>
+          <input name="sid" required autocapitalize="off" placeholder="예: hanbit-es"></label>
+        <label class="field"><span>학교급</span><select name="level"><option value="elem">초등학교 (1~6학년)</option><option value="sec">중·고등학교 (1~3학년)</option></select></label>
+        <div class="grid-form two">
+          <label class="field"><span>관리자 코드 <small>영문·숫자 6자 이상</small></span><input name="code" type="password" required autocomplete="new-password" class="code-input"></label>
+          <label class="field"><span>관리자 코드 확인</span><input name="code2" type="password" required autocomplete="new-password" class="code-input"></label>
+        </div>
+        <p class="hint">관리자 코드는 기본설정을 고칠 때 씁니다. 영문·숫자만 쓰이고 대소문자는 구분하지 않습니다. 잊으면 되찾을 수 없으니 따로 적어 두세요.</p>
+        <p class="errs" hidden></p>
+        <div class="row-end"><button type="button" class="btn ghost" data-close>취소</button><button class="btn primary">만들기</button></div>
+      </form>`,
+    });
+    const f = m.el.querySelector("#ns-form");
+    const errs = f.querySelector(".errs");
+    f.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const name = f.name.value.trim(), sid = T.cleanSid(f.sid.value), code = T.cleanCode(f.code.value);
+      const bad = [];
+      if (!name) bad.push("학교 이름을 넣어 주세요.");
+      if (!T.validSid(sid)) bad.push("학교 코드는 영문 소문자·숫자·- 로 3~30자입니다.");
+      if (sid === T.EXAMPLE_ID) bad.push("'example'은 체험 학교 코드라 쓸 수 없습니다.");
+      if (code.length < 6) bad.push("관리자 코드는 영문·숫자 6자 이상입니다.");
+      if (code !== T.cleanCode(f.code2.value)) bad.push("관리자 코드 확인이 다릅니다.");
+      errs.hidden = !bad.length; errs.innerHTML = bad.map(E).join("<br>");
+      if (bad.length) return;
+      await T.busy(f.querySelector(".btn.primary"), async () => {
+        try {
+          await store.createSchool(sid, T.newSchool(name, f.level.value), code);
+          try { localStorage.setItem(meKey(sid), JSON.stringify({ pid: null, admin: true })); } catch (e2) {}
+          m.close();
+          T.toast("학교를 만들었습니다. 학급 수와 선생님부터 설정하세요.");
+          go(`/s/${sid}/settings`);
+        } catch (err) {
+          errs.hidden = false;
+          errs.textContent = err.code === "exists" ? "이미 있는 학교 코드입니다. 다른 코드를 정하세요." : err.message || String(err);
+        }
+      });
+    });
+  }
+
+  /* ───────── 학교 화면 틀 ───────── */
+  function shell() {
+    const s = sc();
+    if (A.loadError) return `<div class="wrap main"><div class="panel narrow"><h2 class="h2">불러오지 못했습니다</h2><p class="muted">${E(A.loadError.message || A.loadError)}</p><div><a class="btn" href="#/">처음으로</a></div></div></div>`;
+    if (s === undefined) return `<div class="loading">시간표를 불러오는 중…</div>`;
+    if (s === null) return `<div class="wrap main"><div class="panel narrow"><h2 class="h2">학교를 찾지 못했습니다</h2>
+      <p class="muted">학교 코드 <code>${E(A.sid)}</code> 로 만든 학교가 없습니다. 코드를 다시 확인하세요.</p><div><a class="btn primary" href="#/">처음으로</a></div></div></div>`;
+    const me = A.me;
+    const meText = [me.pid ? `${T.personName(s, me.pid)} 선생님` : "", me.admin ? "관리자" : ""].filter(Boolean).join(" · ");
+    const tabs = [["view", "조회"], ["edit", "입력"], ["print", "출력"], ["settings", "기본설정"]];
+    const body = { view: viewTab, edit: editTab, print: printTab, settings: settingsTab }[A.tab]();
+    return `${store.mode === "demo" ? `<div class="demo-banner"><div class="wrap">체험 모드 — 이 브라우저에만 저장됩니다.${A.sid === T.EXAMPLE_ID ? ` 관리자 코드 <b>${T.EXAMPLE_CODES.admin}</b> · 선생님 코드 <b>${T.EXAMPLE_CODES.teacher}</b> · <button class="link-btn" data-act="reset-example">예시 처음 상태로</button>` : ""}</div></div>` : ""}
+      <header class="school-bar"><div class="wrap school-bar-in">
+        <div><p class="eyebrow">${E(T.termLabel(s))} 시간표 · 학교 코드 ${E(A.sid)}</p><h1 class="school-name">${E(s.name)}</h1></div>
+        <div class="me">${meText ? `<span class="me-badge">${E(meText)}</span><button class="btn sm" data-act="logout">나가기</button>` : `<button class="btn sm" data-act="login">인증코드로 들어가기</button>`}
+          <a class="btn sm" href="#/">학교 바꾸기</a></div>
+      </div></header>
+      <nav class="tabs-bar"><div class="wrap tabs">${tabs.map(([k, l]) => `<button class="tab ${A.tab === k ? "on" : ""}" data-act="tab" data-tab="${k}">${l}${k === "settings" && !me.admin ? ' <span class="lock">🔒</span>' : ""}</button>`).join("")}</div></nav>
+      <main class="wrap main">${body}</main>`;
+  }
+
+  /* ───────── 인증 ───────── */
+  function openLogin({ admin = false, pid = null } = {}) {
+    const s = sc();
+    const groups = T.ROLE_ORDER.map((r) => {
+      const ps = T.peopleSorted(s).filter((p) => p.role === r);
+      return ps.length ? `<optgroup label="${T.ROLES[r]}">${ps.map((p) => `<option value="${E(p.id)}" ${pid === p.id ? "selected" : ""}>${E(T.personName(s, p.id))}${p.role === "homeroom" && p.cls && p.name ? ` (${E(p.cls)})` : p.role !== "homeroom" ? ` (${E(T.personDesc(s, p.id))})` : ""}</option>`).join("")}</optgroup>` : "";
+    }).join("");
+    const m = T.modal({
+      title: "인증코드로 들어가기",
+      body: `<form class="stack" id="lg-form">
+        <label class="field"><span>누구인가요?</span><select name="pid">
+          <option value="">— 이름을 고르세요 —</option>
+          <option value="${ADMIN}" ${admin ? "selected" : ""}>관리자 (기본설정)</option>${groups}</select></label>
+        <label class="field"><span>인증코드</span><input name="code" type="password" autocomplete="off" class="code-input" placeholder="관리자에게 받은 코드"></label>
+        ${A.sid === T.EXAMPLE_ID ? `<p class="note">체험 학교: 관리자 <b>${T.EXAMPLE_CODES.admin}</b>, 선생님은 누구든 <b>${T.EXAMPLE_CODES.teacher}</b></p>` : `<p class="hint">인증코드는 학교 관리자가 선생님마다 따로 나눠 줍니다. 자기 이름의 시간표만 고칠 수 있습니다.</p>`}
+        <p class="errs" hidden></p>
+        <div class="row-end"><button type="button" class="btn ghost" data-close>취소</button><button class="btn primary">들어가기</button></div>
+      </form>`,
+    });
+    const f = m.el.querySelector("#lg-form");
+    f.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const who = f.pid.value, code = T.cleanCode(f.code.value);
+      const err = f.querySelector(".errs");
+      if (!who || !code) { err.hidden = false; err.textContent = "이름과 인증코드를 넣어 주세요."; return; }
+      await T.busy(f.querySelector(".btn.primary"), async () => {
+        try {
+          const ok = await store.login(A.sid, who, code);
+          if (!ok) { err.hidden = false; err.textContent = "인증코드가 맞지 않습니다."; return; }
+          if (who === ADMIN) A.me.admin = true; else { A.me.pid = who; A.ed.actAs = null; A.ed.forActor = null; }
+          saveMe();
+          m.close();
+          T.toast(who === ADMIN ? "관리자로 들어왔습니다." : `${T.personName(s, who)} 선생님, 반갑습니다.`);
+          render();
+        } catch (ex) { err.hidden = false; err.textContent = ex.message || String(ex); }
+      });
+    });
+  }
+  async function logout() {
+    if (A.me.pid) await store.logout(A.sid, A.me.pid);
+    if (A.me.admin) await store.logout(A.sid, ADMIN);
+    A.me = { pid: null, admin: false };
+    A.ed.actAs = null; A.ed.forActor = null;
+    A.set = { draft: null, dirty: false, sec: A.set.sec, codes: null, codesFor: null };
+    saveMe();
+    T.toast("나갔습니다.");
+    render();
+  }
+
+  /* ───────── 고르기 부품 ───────── */
+  const classChips = (s, selected, act, extra = () => "") =>
+    `<div class="chip-rows">${T.gradeList(s).map(({ g }) => `<div><span class="chip-label">${g}학년</span><div class="chips">${T.classesOfGrade(s, g)
+      .map((c) => `<button type="button" class="chip ${(Array.isArray(selected) ? selected.includes(c.id) : selected === c.id) ? "on" : ""}" data-act="${act}" data-id="${c.id}">${c.id}${extra(c.id)}</button>`).join("")}</div></div>`).join("")}</div>`;
+  const personChips = (s, selected, act) =>
+    `<div class="chip-rows">${T.ROLE_ORDER.map((r) => {
+      const ps = T.peopleSorted(s).filter((p) => p.role === r);
+      return ps.length ? `<div><span class="chip-label">${T.ROLES[r]}</span><div class="chips">${ps.map((p) => `<button type="button" class="chip ${(Array.isArray(selected) ? selected.includes(p.id) : selected === p.id) ? "on" : ""}" data-act="${act}" data-id="${E(p.id)}">${E(T.personName(s, p.id))}${p.role !== "homeroom" && p.subject ? ` <small>${E(T.subjectShort(s, p.subject))}</small>` : p.role === "homeroom" && p.name && p.cls ? ` <small>${E(p.cls)}</small>` : ""}</button>`).join("")}</div></div>` : "";
+    }).join("") || `<p class="hint">기본설정에서 선생님을 먼저 추가하세요.</p>`}</div>`;
+  const roomChips = (s, selected, act, withHomerooms = true) => {
+    const sp = T.roomList(s).filter((r) => r.special);
+    const sel = (id) => (Array.isArray(selected) ? selected.includes(id) : selected === id);
+    return `<div class="chip-rows"><div><span class="chip-label">특별실</span><div class="chips">${sp.map((r) => `<button type="button" class="chip ${sel(r.id) ? "on" : ""}" data-act="${act}" data-id="${E(r.id)}">${E(r.name)}</button>`).join("") || '<span class="hint">없음</span>'}</div></div>
+      ${withHomerooms ? T.gradeList(s).map(({ g }) => `<div><span class="chip-label">${g}학년 교실</span><div class="chips">${T.classesOfGrade(s, g).map((c) => `<button type="button" class="chip ${sel("hr:" + c.id) ? "on" : ""}" data-act="${act}" data-id="hr:${c.id}">${c.id}</button>`).join("")}</div></div>`).join("") : ""}</div>`;
+  };
+  const seg = (items, cur, act) => `<div class="seg">${items.map(([k, l]) => `<button type="button" class="${String(cur) === String(k) ? "on" : ""}" data-act="${act}" data-v="${E(k)}">${l}</button>`).join("")}</div>`;
+
+  /* ───────── 조회 ───────── */
+  function defaultViewId(kind) {
+    const s = sc();
+    if (kind === "class") {
+      const mine = A.me.pid && T.person(s, A.me.pid);
+      return (mine && mine.role === "homeroom" && mine.cls && T.hasClass(s, mine.cls) && mine.cls) || T.classList(s)[0]?.id || null;
+    }
+    if (kind === "person") return (A.me.pid && T.person(s, A.me.pid) && A.me.pid) || T.peopleSorted(s)[0]?.id || null;
+    return T.roomList(s)[0]?.id || null;
+  }
+  function viewTab() {
+    const s = sc(), v = A.view;
+    const kinds = [["class", "학급"], ["person", "교사·강사"], ["room", "교실"], ["matrix", "한눈에 보기"]];
+    let pick = "", content = "";
+    if (v.kind === "matrix") {
+      pick = `<div class="btn-row">${seg([["class", "학급 기준"], ["person", "교사·강사 기준"], ["room", "교실 기준"]], v.mx, "mx-basis")}
+        ${v.mx === "class" ? seg([[0, "전체"], ...T.gradeList(s).map(({ g }) => [g, g + "학년"])], v.mxGrade, "mx-grade") : ""}</div>`;
+      const rows = T.matrixRows(s, v.mx, v.mx === "class" && v.mxGrade ? { grade: Number(v.mxGrade) } : {});
+      const cols = T.dayList(s).length * T.periodList(s).length;
+      content = rows.length ? `<div class="sheet-card"><div class="row-between"><div><div class="sheet-title">전체 시간표</div><p class="sheet-sub">${E({ class: "학급", person: "교사·강사", room: "교실" }[v.mx])} 기준 · 칸에 마우스를 올리면 자세히 보입니다</p></div>
+        <button class="btn sm" data-act="to-print" data-type="all" data-basis="${v.mx}">이 표 출력하기</button></div>
+        <div class="mx-wrap" style="--mx-min:${110 + cols * 34}px;--mx-lw:110px">${T.matrixHTML(s, A.idx, v.mx, rows)}</div></div>` : `<p class="empty">표시할 항목이 없습니다.</p>`;
+    } else {
+      if (!v.id || (v.kind === "class" && !T.hasClass(s, v.id)) || (v.kind === "person" && !T.person(s, v.id)) || (v.kind === "room" && !T.roomList(s).some((r) => r.id === v.id))) v.id = defaultViewId(v.kind);
+      pick = v.kind === "class" ? classChips(s, v.id, "view-id") : v.kind === "person" ? personChips(s, v.id, "view-id") : roomChips(s, v.id, "view-id");
+      content = v.id ? `<div class="sheet-card">
+          <div class="row-between"><div><div class="sheet-title">${E(T.titleOf(s, v.kind, v.id))} 시간표</div><p class="sheet-sub">${E(T.subtitleOf(s, v.kind, v.id))}</p></div>
+          <div class="btn-row">${canEditAs(editPidFor(v.kind, v.id)) ? `<button class="btn sm" data-act="to-edit">입력하러 가기</button>` : ""}
+            <button class="btn sm" data-act="to-print" data-type="${v.kind}" data-id="${E(v.id)}">출력하기</button></div></div>
+          <div class="g-scroll">${T.gridHTML(s, A.idx, v.kind, v.id)}</div>
+          ${T.hoursHTML(s, A.idx, v.kind, v.id) || `<p class="hint">아직 입력된 시간이 없습니다.</p>`}
+        </div>` : `<p class="empty">표시할 항목이 없습니다. 기본설정을 먼저 해 주세요.</p>`;
+    }
+    const cf = A.idx ? A.idx.conflicts : [];
+    return `<section class="panel">
+        <div class="row-between"><h2 class="h2">시간표 보기</h2>${seg(kinds, v.kind, "view-kind")}</div>
+        ${pick}
+      </section>
+      ${cf.length ? `<div class="conflict-box"><b>겹치는 시간 ${cf.length}건</b> — 같은 시간에 한 학급·한 선생님·한 교실이 두 번 쓰였습니다.<ul>${cf.slice(0, 8).map((c) => `<li>${E(T.conflictText(s, c))}</li>`).join("")}${cf.length > 8 ? `<li>…그 밖에 ${cf.length - 8}건</li>` : ""}</ul></div>` : ""}
+      ${A.idx && A.idx.hidden ? `<p class="hint">학급 수·교시·요일을 바꾸어 표에 나오지 않는 입력이 ${A.idx.hidden}칸 있습니다.</p>` : ""}
+      ${content}`;
+  }
+  const editPidFor = (kind, id) => {
+    if (kind === "person") return id;
+    if (kind === "class") return A.me.pid || (A.me.admin ? "x" : null);
+    return null;
+  };
+
+  /* ───────── 입력 ───────── */
+  function myEntries(pid) { return T.clone((A.slots[pid] && A.slots[pid].e) || {}); }
+  function setEntries(pid, e, flash) {
+    A.slots[pid] = { ...(A.slots[pid] || {}), e };
+    A.idx = T.buildIndex(sc(), A.slots);
+    A.pending[pid] = true;
+    A.saveState = "saving";
+    clearTimeout(A.timers[pid]);
+    A.timers[pid] = setTimeout(() => flush(pid), 450);
+    render();
+    if (flash) { const td = app.querySelector(`td[data-d="${flash[0]}"][data-p="${flash[1]}"]`); td && td.classList.add("flash"); }
+  }
+  async function flush(pid) {
+    const sid = A.sid;
+    try {
+      await store.saveSlots(sid, pid, A.slots[pid].e);
+      if (A.sid !== sid) return;
+      delete A.pending[pid];
+      A.saveState = Object.keys(A.pending).length ? "saving" : "saved";
+    } catch (err) {
+      delete A.pending[pid];
+      A.saveState = "err";
+      T.toast(err.message || "저장하지 못했습니다.", "error");
+      if (err instanceof T.Denied) {
+        if (A.me.pid === pid) A.me.pid = null;
+        saveMe();
+        openLogin({ pid });
+      }
+    }
+    const el = app.querySelector(".save-state");
+    if (el) { el.className = "save-state " + A.saveState; el.textContent = saveText(); }
+  }
+  window.addEventListener("beforeunload", (e) => { if (Object.keys(A.pending).length) { e.preventDefault(); e.returnValue = ""; } });
+  const saveText = () => ({ saving: "저장 중…", saved: "✓ 자동 저장됨", err: "⚠ 저장 실패 — 다시 들어와 주세요" }[A.saveState] || "누르는 즉시 자동 저장됩니다");
+
+  function syncEdDefaults() {
+    const s = sc(), pid = actor();
+    if (A.ed.forActor === pid) return;
+    A.ed.forActor = pid;
+    const p = T.person(s, pid);
+    A.ed.mode = p && p.role === "homeroom" ? "class" : "week";
+    A.ed.cls = (p && p.role === "homeroom" && p.cls && T.hasClass(s, p.cls) && p.cls) || T.classList(s)[0]?.id || null;
+    A.ed.brush = null;
+    A.ed.room = "";
+    A.ed.subj = (p && p.subject) || "";
+    A.ed.wroom = (p && p.room) || "";
+    A.ed.wbrush = null;
+  }
+
+  function editTab() {
+    const s = sc();
+    if (!A.me.pid && !A.me.admin) {
+      return `<section class="panel narrow"><h2 class="h2">시간표 입력</h2>
+        <p class="muted">입력하려면 본인 이름을 고르고 관리자에게 받은 인증코드를 넣으세요. 자기 이름으로 넣은 시간만 고칠 수 있고, 다른 선생님이 넣은 칸은 잠겨 있습니다.</p>
+        <ol class="muted" style="padding-left:20px;margin:0">
+          <li><b>교과전담·강사</b>: 내 주간 시간표에서 학급을 골라 칸을 누릅니다.</li>
+          <li><b>담임</b>: 우리 반 시간표에서 전담 시간(잠긴 칸)을 뺀 나머지 칸에 과목을 넣습니다.</li></ol>
+        <div><button class="btn primary" data-act="login">인증코드로 들어가기</button></div></section>`;
+    }
+    if (A.ed.actAs && !T.person(s, A.ed.actAs)) A.ed.actAs = null;
+    const pid = actor();
+    const adminPick = A.me.admin ? `<label class="field" style="min-width:220px"><span>${A.me.pid ? "다른 선생님 대신 입력" : "누구의 시간표를 입력할까요?"}</span>
+      <select data-on="act-as"><option value="">${A.me.pid ? `나 (${E(T.personName(s, A.me.pid))})` : "— 선생님 고르기 —"}</option>${T.peopleSorted(s).filter((p) => p.id !== A.me.pid)
+        .map((p) => `<option value="${E(p.id)}" ${A.ed.actAs === p.id ? "selected" : ""}>${E(T.personName(s, p.id))} · ${E(T.personDesc(s, p.id))}</option>`).join("")}</select></label>` : "";
+    if (!pid || !T.person(s, pid)) {
+      return `<section class="panel"><h2 class="h2">시간표 입력</h2>${adminPick || ""}
+        <p class="muted">${(s.people || []).length ? "위에서 선생님을 고르면 그 선생님 이름으로 입력합니다." : "기본설정 → 선생님·인증코드에서 선생님을 먼저 추가하세요."}</p></section>`;
+    }
+    syncEdDefaults();
+    const p = T.person(s, pid);
+    const locked = !s.homeroomOpen && p.role === "homeroom" && !A.me.admin;
+    const mode = A.ed.mode;
+    const top = `<section class="panel">
+      <div class="row-between"><div class="who"><span class="hint">입력하는 사람</span><span class="who-name">${E(T.personName(s, pid))}</span><span class="hint">${E(T.personDesc(s, pid))}</span></div>
+        <span class="save-state ${A.saveState}">${saveText()}</span></div>
+      <div class="btn-row" style="align-items:flex-end">${adminPick}
+        ${seg([["class", "학급 시간표에 넣기"], ["week", "내 주간 시간표에 넣기"]], mode, "ed-mode")}</div>
+      ${!s.homeroomOpen ? `<p class="note warn">지금은 <b>교과전담·강사 입력 기간</b>입니다. ${p.role === "homeroom" ? (A.me.admin ? "관리자라서 담임 시간표도 고칠 수 있습니다." : "관리자가 담임 입력을 열면 남은 칸에 시간표를 넣을 수 있습니다.") : "담임 선생님들은 아직 입력할 수 없습니다."}</p>` : ""}
+    </section>`;
+    if (locked) return top + `<section class="panel"><h2 class="h3">${E(p.cls ? T.className(p.cls) : "")} 시간표 (보기 전용)</h2>${p.cls && T.hasClass(s, p.cls) ? `<div class="g-scroll">${T.gridHTML(s, A.idx, "class", p.cls)}</div>` : ""}</section>`;
+    return top + (mode === "class" ? editClass(s, pid, p) : editWeek(s, pid, p));
+  }
+
+  const roomOptions = (s, cur, homeLabel = "학급 교실 (기본)") =>
+    `<option value="">${homeLabel}</option>${(s.rooms || []).map((r) => `<option value="${E(r.id)}" ${cur === r.id ? "selected" : ""}>${E(r.name)}${r.multi ? " (여러 학급 가능)" : ""}</option>`).join("")}`;
+
+  function editClass(s, pid, p) {
+    const cls = A.ed.cls;
+    if (!cls || !T.hasClass(s, cls)) return `<section class="panel"><p class="empty">학급이 없습니다. 기본설정에서 학년별 학급 수를 정하세요.</p></section>`;
+    const b = A.ed.brush;
+    const palette = `<div class="palette">${(s.subjects || []).map((x) => `<button type="button" class="brush ${b && b.s === x.id ? "on" : ""}" style="${T.colorVars(x.color)}" data-act="brush" data-s="${E(x.id)}">${E(x.short || x.name)}</button>`).join("")}
+      <button type="button" class="brush eraser ${b && b.erase ? "on" : ""}" data-act="brush" data-erase="1">지우개</button></div>`;
+    const grid = T.gridHTML(s, A.idx, "class", cls, {
+      cell: (d, pp) => {
+        const items = T.cellItems(A.idx, "class", cls, d, pp);
+        const attrs = `data-act="cell" data-d="${d}" data-p="${pp}"`;
+        const others = items.filter((i) => i.pid !== pid), mine = items.filter((i) => i.pid === pid);
+        if (others.length) {
+          const o = others[0];
+          return { cls: "locked", style: T.colorVars(T.subjectColor(s, o.s)), attrs: attrs + ` title="${E(T.personName(s, o.pid))} 선생님이 넣은 시간"`, html: `<b>${E(T.subjectShort(s, o.s))}</b><small>${E(T.personName(s, o.pid))}</small>${mine.length ? "<small>⚠ 겹침</small>" : ""}` };
+        }
+        if (mine.length) {
+          const m = mine[0];
+          return { cls: "mine", style: T.colorVars(T.subjectColor(s, m.s)), attrs, html: `<b>${E(T.subjectShort(s, m.s))}</b>${m.r ? `<small>${E(T.roomName(s, m.r))}</small>` : ""}` };
+        }
+        return { cls: "empty", attrs, html: "" };
+      },
+    });
+    const hr = T.homeroomOf(s, cls);
+    const clsSel = `<label class="field" style="min-width:150px"><span>학급</span><select data-on="ed-cls">${T.gradeList(s).map(({ g }) => `<optgroup label="${g}학년">${T.classesOfGrade(s, g).map((c) => `<option value="${c.id}" ${c.id === cls ? "selected" : ""}>${c.id}${p.role === "homeroom" && p.cls === c.id ? " (우리 반)" : ""}</option>`).join("")}</optgroup>`).join("")}</select></label>`;
+    return `<div class="ed-layout">
+        <section class="panel">
+          <div class="row-between" style="align-items:flex-end"><div><h2 class="h2">${E(T.className(cls))}</h2><p class="hint">${hr ? `담임 ${E(T.personName(s, hr.id))} · ` : ""}🔒 칸은 다른 선생님(교과전담·강사)이 넣은 시간이라 고칠 수 없습니다.</p></div>${clsSel}</div>
+          <div class="stack" style="gap:8px"><span class="hint"><b>① 과목을 고르고 ② 빈칸을 누르세요.</b> 같은 과목으로 한 번 더 누르면 지워집니다.</span>${palette}
+            <label class="field" style="max-width:260px"><span>장소</span><select data-on="ed-room">${roomOptions(s, A.ed.room)}</select></label></div>
+          <div class="g-scroll ed-grid">${grid}</div>
+        </section>
+        <aside class="side">
+          <div class="panel"><h3 class="h3">${E(cls)} 과목별 시수</h3>${T.hoursHTML(s, A.idx, "class", cls) || '<p class="hint">아직 없음</p>'}</div>
+          <div class="panel"><h3 class="h3">내가 넣은 시간</h3><p class="muted">이 학급 ${countMine(pid, cls)}시간 · 전체 ${countMine(pid)}시간</p>
+            <button class="btn sm ghost" data-act="clear-mine" data-cls="${E(cls)}">이 학급에 넣은 내 시간 지우기</button></div>
+        </aside>
+      </div>`;
+  }
+  const countMine = (pid, cls) => Object.keys((A.slots[pid] && A.slots[pid].e) || {}).filter((k) => !cls || k.startsWith(cls + "|")).length;
+
+  function editWeek(s, pid, p) {
+    const wb = A.ed.wbrush;
+    const mineBy = {};
+    Object.keys((A.slots[pid] && A.slots[pid].e) || {}).forEach((k) => { const c = k.split("|")[0]; mineBy[c] = (mineBy[c] || 0) + 1; });
+    const palette = `${classChips(s, wb && wb.cls ? wb.cls : null, "wbrush", (id) => (mineBy[id] ? ` <small>${mineBy[id]}</small>` : ""))}
+      <div><button type="button" class="brush eraser ${wb && wb.erase ? "on" : ""}" data-act="wbrush" data-erase="1">지우개</button></div>`;
+    const B = wb && wb.cls;
+    const roomSel = A.ed.wroom;
+    const roomObj = roomSel ? T.room(s, roomSel) : null;
+    const grid = T.gridHTML(s, A.idx, "person", pid, {
+      cell: (d, pp) => {
+        const attrs = `data-act="cell" data-d="${d}" data-p="${pp}"`;
+        const mine = T.cellItems(A.idx, "person", pid, d, pp);
+        if (mine.length) {
+          const m = mine[0];
+          return { cls: "mine" + (mine.length > 1 ? " conflict" : ""), style: T.colorVars(T.subjectColor(s, m.s)), attrs, html: mine.length > 1 ? `<b>겹침</b><small>${E(mine.map((x) => x.cls).join(", "))}</small>` : `<b>${E(m.cls)}</b><small>${E(T.subjectShort(s, m.s))}${m.r ? " · " + E(T.roomName(s, m.r)) : ""}</small>` };
+        }
+        if (B) {
+          const busy = T.cellItems(A.idx, "class", B, d, pp).filter((i) => i.pid !== pid);
+          if (busy.length) return { cls: "busy", attrs, html: `<small>${E(B)} ${E(T.subjectShort(s, busy[0].s))}</small><small>${E(T.personName(s, busy[0].pid))}</small>` };
+          if (roomObj && !roomObj.multi) {
+            const rb = T.cellItems(A.idx, "room", roomSel, d, pp).filter((i) => i.pid !== pid);
+            if (rb.length) return { cls: "busy", attrs, html: `<small>${E(roomObj.name)}</small><small>${E(rb[0].cls)} 사용</small>` };
+          }
+        }
+        return { cls: "empty", attrs, html: "" };
+      },
+    });
+    const h = T.hoursBy(A.idx, "person", pid);
+    return `<div class="ed-layout">
+        <section class="panel">
+          <div><h2 class="h2">${E(T.personName(s, pid))} 선생님 주간 시간표</h2>
+          <p class="hint"><b>① 과목·장소를 정하고 ② 학급을 고른 뒤 ③ 칸을 누르세요.</b> 학급을 고르면 그 반이 이미 찬 시간은 빗금으로 막힙니다. 같은 학급으로 한 번 더 누르면 지워집니다.</p></div>
+          <div class="grid-form two">
+            <label class="field"><span>과목</span><select data-on="ed-subj"><option value="">— 과목 고르기 —</option>${(s.subjects || []).map((x) => `<option value="${E(x.id)}" ${A.ed.subj === x.id ? "selected" : ""}>${E(x.name)}</option>`).join("")}</select></label>
+            <label class="field"><span>장소</span><select data-on="ed-wroom">${roomOptions(s, A.ed.wroom, "각 학급 교실로 찾아감")}</select></label>
+          </div>
+          ${palette}
+          <div class="g-scroll ed-grid">${grid}</div>
+        </section>
+        <aside class="side">
+          <div class="panel"><h3 class="h3">내 수업 시수</h3><p class="muted">주 <b>${h.total}</b>시간</p>
+            ${Object.keys(mineBy).length ? `<ul class="mini-list">${Object.keys(mineBy).sort((a, b) => T.clsKey(a) - T.clsKey(b)).map((c) => `<li><span>${E(c)}</span><b>${mineBy[c]}</b></li>`).join("")}</ul>` : '<p class="hint">아직 없음</p>'}
+            ${T.hoursHTML(s, A.idx, "person", pid)}</div>
+          <div class="panel"><button class="btn sm ghost" data-act="clear-mine">내 시간표 모두 지우기</button></div>
+        </aside>
+      </div>`;
+  }
+
+  function cellClick(d, p) {
+    const s = sc(), pid = actor();
+    if (!canEditAs(pid)) { openLogin({ pid }); return; }
+    const per = T.person(s, pid);
+    if (!s.homeroomOpen && per && per.role === "homeroom" && !A.me.admin) { T.toast("지금은 교과전담·강사 입력 기간입니다.", "error"); return; }
+    const e = myEntries(pid);
+    if (A.ed.mode === "class") {
+      const cls = A.ed.cls, k = T.key(cls, d, p), b = A.ed.brush;
+      const items = T.cellItems(A.idx, "class", cls, d, p);
+      const others = items.filter((i) => i.pid !== pid);
+      if (others.length) { T.toast(`${T.personName(s, others[0].pid)} 선생님이 넣은 ${T.subjectName(s, others[0].s)} 시간이라 고칠 수 없습니다.`, "error"); return; }
+      if (!b) { T.toast(e[k] ? "지우려면 지우개를, 바꾸려면 다른 과목을 먼저 고르세요." : "위에서 과목을 먼저 고르세요.", "error"); return; }
+      if (b.erase) { if (!e[k]) return; delete e[k]; return setEntries(pid, e, [d, p]); }
+      if (e[k] && e[k].s === b.s && (e[k].r || "") === (A.ed.room || "")) { delete e[k]; return setEntries(pid, e, [d, p]); }
+      const elsewhere = T.cellItems(A.idx, "person", pid, d, p).filter((i) => i.cls !== cls);
+      if (elsewhere.length) { T.toast(`이 시간(${T.DAYS[d]} ${p}교시)에 이미 ${elsewhere[0].cls} 수업이 있습니다.`, "error"); return; }
+      if (A.ed.room) {
+        const r = T.room(s, A.ed.room);
+        const rb = T.cellItems(A.idx, "room", A.ed.room, d, p).filter((i) => !(i.pid === pid && i.cls === cls));
+        if (r && !r.multi && rb.length) { T.toast(`${r.name}은(는) 이 시간에 ${rb[0].cls}이(가) 씁니다.`, "error"); return; }
+      }
+      e[k] = { s: b.s, r: A.ed.room || "" };
+      return setEntries(pid, e, [d, p]);
+    }
+    // 주간 모드
+    const wb = A.ed.wbrush;
+    const mine = T.cellItems(A.idx, "person", pid, d, p);
+    if (!wb) { T.toast(mine.length ? "지우려면 지우개를 고르세요." : "아래에서 학급을 먼저 고르세요.", "error"); return; }
+    if (wb.erase) { if (!mine.length) return; mine.forEach((i) => delete e[i.k]); return setEntries(pid, e, [d, p]); }
+    const B = wb.cls, k = T.key(B, d, p);
+    if (!A.ed.subj) { T.toast("과목을 먼저 고르세요.", "error"); return; }
+    if (mine.length === 1 && mine[0].cls === B && e[k] && e[k].s === A.ed.subj && (e[k].r || "") === (A.ed.wroom || "")) { delete e[k]; return setEntries(pid, e, [d, p]); }
+    const busy = T.cellItems(A.idx, "class", B, d, p).filter((i) => i.pid !== pid);
+    if (busy.length) { T.toast(`${B} ${T.DAYS[d]} ${p}교시는 ${T.personName(s, busy[0].pid)} 선생님의 ${T.subjectName(s, busy[0].s)} 시간입니다.`, "error"); return; }
+    if (A.ed.wroom) {
+      const r = T.room(s, A.ed.wroom);
+      const rb = T.cellItems(A.idx, "room", A.ed.wroom, d, p).filter((i) => i.pid !== pid);
+      if (r && !r.multi && rb.length) { T.toast(`${r.name}은(는) 이 시간에 ${rb[0].cls}이(가) 씁니다.`, "error"); return; }
+    }
+    mine.forEach((i) => delete e[i.k]);
+    e[k] = { s: A.ed.subj, r: A.ed.wroom || "" };
+    setEntries(pid, e, [d, p]);
+  }
+
+  /* ───────── 출력 ───────── */
+  const prIds = (type) => {
+    const s = sc();
+    if (!A.pr.ids[type]) {
+      if (type === "class") A.pr.ids.class = T.classList(s).map((c) => c.id);
+      else if (type === "person") A.pr.ids.person = T.peopleSorted(s).filter((p) => p.role !== "homeroom").map((p) => p.id);
+      else if (type === "room") A.pr.ids.room = (s.rooms || []).map((r) => r.id);
+    }
+    const valid = type === "class" ? new Set(T.classList(s).map((c) => c.id)) : type === "person" ? new Set((s.people || []).map((p) => p.id)) : new Set(T.roomList(s).map((r) => r.id));
+    A.pr.ids[type] = A.pr.ids[type].filter((x) => valid.has(x));
+    return A.pr.ids[type];
+  };
+  const sortIds = (type, ids) => {
+    const s = sc();
+    const order = type === "class" ? T.classList(s).map((c) => c.id) : type === "person" ? T.peopleSorted(s).map((p) => p.id) : T.roomList(s).map((r) => r.id);
+    return ids.slice().sort((a, b) => order.indexOf(a) - order.indexOf(b));
+  };
+  function currentJob() {
+    const s = sc(), pr = A.pr;
+    if (!pr.grades) pr.grades = T.gradeList(s).map((x) => x.g);
+    pr.grades = pr.grades.filter((g) => T.gradeList(s).some((x) => x.g === g));
+    const job = { type: pr.type, orient: pr.orient, perPage: pr.perPage, basis: pr.basis, gradeStyle: pr.gradeStyle, hours: pr.hours, grades: pr.grades.slice().sort() };
+    if (["class", "person", "room"].includes(pr.type)) job.ids = sortIds(pr.type, prIds(pr.type));
+    return job;
+  }
+  const jobName = (job) => {
+    const s = sc();
+    const t = { class: "학급별", person: "교사강사별", room: "교실별", grade: "학년별", all: "전체" }[job.type];
+    let x = "";
+    if (job.ids && job.ids.length === 1) x = "_" + T.titleOf(s, job.type, job.ids[0]).replace(/\s+/g, "");
+    if (job.type === "grade" && job.grades.length === 1) x = `_${job.grades[0]}학년`;
+    if (job.type === "all") x = "_" + { class: "학급기준", person: "교사기준", room: "교실기준" }[job.basis];
+    return `${s.name}_${t}시간표${x}_${job.orient === "landscape" ? "가로" : "세로"}`.replace(/[\\/:*?"<>|]/g, "");
+  };
+
+  function printTab() {
+    const s = sc(), pr = A.pr;
+    const job = currentJob();
+    const types = [["class", "학급별"], ["grade", "학년별"], ["person", "교사·강사별"], ["room", "교실별"], ["all", "전체 (한눈에)"]];
+    let target = "";
+    if (pr.type === "class") target = `<div class="row-between"><b>학급</b><span class="btn-row"><button class="link-btn" data-act="pr-all">모두</button><button class="link-btn" data-act="pr-none">해제</button></span></div>${classChips(s, prIds("class"), "pr-id")}`;
+    if (pr.type === "person") target = `<div class="row-between"><b>선생님</b><span class="btn-row"><button class="link-btn" data-act="pr-all">모두</button><button class="link-btn" data-act="pr-subject">전담·강사만</button><button class="link-btn" data-act="pr-none">해제</button></span></div>${personChips(s, prIds("person"), "pr-id")}`;
+    if (pr.type === "room") target = `<div class="row-between"><b>교실</b><span class="btn-row"><button class="link-btn" data-act="pr-all">모두</button><button class="link-btn" data-act="pr-none">해제</button></span></div>${roomChips(s, prIds("room"), "pr-id")}`;
+    if (pr.type === "grade") target = `<b>학년</b><div class="chips">${T.gradeList(s).map(({ g }) => `<button class="chip ${pr.grades.includes(g) ? "on" : ""}" data-act="pr-grade" data-g="${g}">${g}학년</button>`).join("")}</div>
+      <b>모양</b>${seg([["grid", "학급별 표 모아 보기"], ["matrix", "한 줄에 한 학급"]], pr.gradeStyle, "pr-gstyle")}`;
+    if (pr.type === "all") target = `<b>기준</b>${seg([["class", "학급"], ["person", "교사·강사"], ["room", "교실"]], pr.basis, "pr-basis")}`;
+    const perPage = ["class", "person", "room"].includes(pr.type)
+      ? `<b>한 장에</b>${seg([[1, "1개"], [2, "2개"], [4, "4개"], [6, "6개"]], pr.perPage, "pr-per")}` : "";
+    const hoursOpt = pr.type !== "all" && !(pr.type === "grade" && pr.gradeStyle === "matrix") ? `<label class="check"><input type="checkbox" data-on="pr-hours" ${pr.hours ? "checked" : ""}><span>과목별 시수 함께 출력</span></label>` : "";
+    const pages = T.buildPages(s, A.idx, job);
+    const MAXPV = 12;
+    const P = T.PAPER[pr.orient];
+    after.push(() => fitPreview());
+    return `<div class="print-layout">
+      <section class="panel print-opts">
+        <h2 class="h2">출력</h2>
+        <b>무엇을</b><div class="chips">${types.map(([k, l]) => `<button class="chip ${pr.type === k ? "on" : ""}" data-act="pr-type" data-v="${k}">${l}</button>`).join("")}</div>
+        ${target}
+        <b>용지</b>${seg([["landscape", "A4 가로"], ["portrait", "A4 세로"]], pr.orient, "pr-orient")}
+        ${perPage}${hoursOpt}
+        <div class="stack" style="gap:8px;padding-top:6px;border-top:1px solid var(--line)">
+          <button class="btn primary" data-act="export" data-kind="pdf" ${pages.length ? "" : "disabled"}>PDF 저장 <small>(${pages.length}쪽)</small></button>
+          <button class="btn" data-act="export" data-kind="jpg" ${pages.length ? "" : "disabled"}>JPG 저장${pages.length > 1 ? " <small>(묶음 zip)</small>" : ""}</button>
+          ${window.claude ? `<p class="hint">Claude 화면에서는 바로 인쇄가 막혀 있습니다. PDF로 저장해 인쇄하세요.</p>` : `<button class="btn ghost" data-act="export" data-kind="print" ${pages.length ? "" : "disabled"}>바로 인쇄</button>`}
+        </div>
+      </section>
+      <section class="preview" id="preview" data-w="${P.w}" data-h="${P.h}">
+        <span class="pv-count">미리보기 · ${P.label} ${pages.length}쪽${pages.length > MAXPV ? ` (앞 ${MAXPV}쪽만 보여 줍니다)` : ""}</span>
+        ${pages.length ? pages.slice(0, MAXPV).map((h, i) => `<div class="pv-page" data-i="${i}">${h}</div>`).join("") : `<p class="empty">출력할 대상을 고르세요.</p>`}
+      </section>
+    </div>`;
+  }
+  function fitPreview() {
+    const pv = app.querySelector("#preview");
+    if (!pv) return;
+    const W = Number(pv.dataset.w), H = Number(pv.dataset.h);
+    const avail = Math.min(pv.clientWidth - 28, 900);
+    const k = Math.min(1, avail / W);
+    const n = pv.querySelectorAll(".pv-page").length;
+    pv.querySelectorAll(".pv-page").forEach((el, i) => {
+      el.style.width = W * k + "px"; el.style.height = H * k + "px";
+      const pg = el.firstElementChild;
+      pg.style.transform = `scale(${k})`;
+      T.numberPage(pg, i, n);
+    });
+  }
+  window.addEventListener("resize", () => { if (A.tab === "print") fitPreview(); });
+
+  async function doExport(kind, btn) {
+    const job = currentJob();
+    const pages = T.buildPages(sc(), A.idx, job);
+    if (!pages.length) return;
+    if (kind === "print") return T.printPages(pages, job.orient);
+    await T.busy(btn, async () => {
+      try {
+        const prog = (i, n) => { if (btn.isConnected) btn.textContent = `만드는 중… ${i}/${n}`; };
+        const ok = kind === "pdf" ? await T.exportPDF(pages, job.orient, jobName(job), prog) : await T.exportJPG(pages, job.orient, jobName(job), prog);
+        if (ok) T.toast(kind === "pdf" ? "PDF를 저장했습니다." : "JPG를 저장했습니다.");
+      } catch (e) { T.toast(e.message || "저장하지 못했습니다.", "error"); }
+    });
+  }
+
+  /* ───────── 기본설정 (관리자) ───────── */
+  const draft = () => (A.set.draft = A.set.draft || T.clone(sc()));
+  const markDirty = () => {
+    A.set.dirty = true;
+    const bar = app.querySelector(".dirty-bar");
+    if (bar) bar.hidden = false;
+  };
+  async function loadCodes() {
+    if (A.set.codesFor === A.sid && A.set.codes) return;
+    A.set.codesFor = A.sid;
+    try { A.set.codes = await store.getCodes(A.sid); } catch (e) { A.set.codes = {}; if (e instanceof T.Denied) { A.me.admin = false; saveMe(); } }
+    render();
+  }
+
+  function settingsTab() {
+    if (!A.me.admin) {
+      return `<section class="panel narrow"><h2 class="h2">기본설정</h2><p class="muted">학년별 학급 수, 요일·교시, 과목·장소, 선생님과 인증코드는 관리자만 정합니다.</p>
+        <div><button class="btn primary" data-act="login-admin">관리자 코드로 들어가기</button></div></section>`;
+    }
+    const d = draft();
+    if (!A.set.codes || A.set.codesFor !== A.sid) loadCodes();
+    const secs = [["basic", "기본 정보"], ["grid", "학급·요일·교시"], ["subj", "과목·장소"], ["people", "선생님·인증코드"], ["manage", "관리"]];
+    const body = { basic: setBasic, grid: setGrid, subj: setSubj, people: setPeople, manage: setManage }[A.set.sec](d);
+    return `<section class="panel"><div class="row-between"><h2 class="h2">기본설정</h2><div class="set-nav">${secs.map(([k, l]) => `<button class="chip ${A.set.sec === k ? "on" : ""}" data-act="set-sec" data-v="${k}">${l}</button>`).join("")}</div></div></section>
+      ${body}
+      <div class="dirty-bar" ${A.set.dirty ? "" : "hidden"}><div class="wrap"><span><b>저장하지 않은 변경이 있습니다.</b> <span class="hint">저장해야 다른 선생님 화면에도 반영됩니다.</span></span>
+        <span class="btn-row"><button class="btn ghost" data-act="set-revert">되돌리기</button><button class="btn primary" data-act="set-save">변경 사항 저장</button></span></div></div>`;
+  }
+  const inp = (path, val, attrs = "") => `<input data-s="${path}" data-f="s-${path}" value="${E(val ?? "")}" ${attrs}>`;
+
+  function setBasic(d) {
+    return `<section class="panel"><h3 class="h3">학교 정보</h3>
+      <div class="grid-form three">
+        <label class="field span2"><span>학교 이름</span>${inp("name", d.name)}</label>
+        <label class="field"><span>학교급</span><select data-s="level" data-structural="1"><option value="elem" ${d.level === "elem" ? "selected" : ""}>초등학교</option><option value="sec" ${d.level !== "elem" ? "selected" : ""}>중·고등학교</option></select></label>
+        <label class="field"><span>학년도</span>${inp("year", d.year, 'type="number" min="2020" max="2100"')}</label>
+        <label class="field"><span>학기 <small>예: 1학기, 2학기, 여름방학</small></span>${inp("term", d.term)}</label>
+      </div></section>
+      <section class="panel"><h3 class="h3">입력 순서</h3>
+        <p class="hint">교과전담·강사 시간표를 먼저 다 넣은 뒤 담임 입력을 열면, 담임 선생님은 남은 칸에만 넣게 됩니다.</p>
+        <label class="check"><input type="radio" name="hro" data-on="hro" value="0" ${!d.homeroomOpen ? "checked" : ""}><span><b>1단계 · 교과전담·강사 먼저</b><br><span class="hint">담임은 보기만 할 수 있습니다.</span></span></label>
+        <label class="check"><input type="radio" name="hro" data-on="hro" value="1" ${d.homeroomOpen ? "checked" : ""}><span><b>2단계 · 모두 입력</b><br><span class="hint">담임은 전담 시간(잠긴 칸)을 뺀 나머지에 넣습니다.</span></span></label>
+      </section>`;
+  }
+  function setGrid(d) {
+    const maxG = d.level === "elem" ? 6 : 3;
+    while ((d.classCounts || []).length < maxG) d.classCounts.push(0);
+    const periods = Number(d.periods) || 6;
+    while (d.times.length < 9) d.times.push({ s: "", e: "" });
+    return `<section class="panel"><h3 class="h3">학년별 학급 수</h3>
+        <p class="hint">학급 수를 정하면 학급(1-1, 1-2 …)과 학급 교실이 자동으로 생깁니다. 줄이면 없어진 반에 넣은 시간표는 표에 나오지 않습니다.</p>
+        <div class="grade-counts">${Array.from({ length: maxG }, (_, i) => `<label>${i + 1}학년<input type="number" min="0" max="30" data-s="classCounts.${i}" data-num="1" data-f="cc${i}" value="${Number(d.classCounts[i]) || 0}"></label>`).join("")}</div>
+        <p class="muted">모두 <b>${d.classCounts.slice(0, maxG).reduce((a, b) => a + (Number(b) || 0), 0)}</b>학급</p>
+      </section>
+      <section class="panel"><h3 class="h3">요일·교시</h3>
+        <div class="btn-row"><b>요일</b><div class="chips">${[1, 2, 3, 4, 5, 6].map((x) => `<button class="chip ${d.days.includes(x) ? "on" : ""}" data-act="set-day" data-v="${x}">${T.DAYS[x]}</button>`).join("")}</div></div>
+        <div class="grid-form three">
+          <label class="field"><span>하루 최대 교시</span><select data-s="periods" data-num="1" data-structural="1">${[4, 5, 6, 7, 8, 9].map((n) => `<option ${n === periods ? "selected" : ""}>${n}</option>`).join("")}</select></label>
+          <label class="field"><span>점심시간 위치</span><select data-s="lunchAfter" data-num="1" data-structural="1"><option value="0">표시 안 함</option>${Array.from({ length: periods - 1 }, (_, i) => `<option value="${i + 1}" ${Number(d.lunchAfter) === i + 1 ? "selected" : ""}>${i + 1}교시 뒤</option>`).join("")}</select></label>
+        </div>
+        <div class="tbl-wrap"><table class="tbl"><thead><tr><th>교시</th><th>시작</th><th>끝</th></tr></thead><tbody>
+          ${Array.from({ length: periods }, (_, i) => `<tr><td><b>${i + 1}교시</b></td><td><input type="time" data-s="times.${i}.s" data-f="t${i}s" value="${E(d.times[i].s)}"></td><td><input type="time" data-s="times.${i}.e" data-f="t${i}e" value="${E(d.times[i].e)}"></td></tr>`).join("")}
+        </tbody></table></div>
+        <div><button class="btn sm" data-act="set-times-default">기본 시각으로 채우기</button></div>
+      </section>`;
+  }
+  function setSubj(d) {
+    const colorPick = (i, cur) => `<div class="color-pick">${T.COLOR_KEYS.map((k) => `<button type="button" class="${cur === k ? "on" : ""}" style="${T.colorVars(k)}" title="${T.COLORS[k].name}" data-act="subj-color" data-i="${i}" data-v="${k}"></button>`).join("")}</div>`;
+    return `<section class="panel"><div class="row-between"><h3 class="h3">과목</h3><button class="btn sm" data-act="subj-add">＋ 과목 추가</button></div>
+        <p class="hint">약칭은 칸이 좁을 때 씁니다(예: 창의적 체험활동 → 창체). 과목을 지우면 그 과목으로 넣은 칸은 '(지운 과목)'으로 보입니다.</p>
+        <div class="tbl-wrap"><table class="tbl"><thead><tr><th>순서</th><th>과목 이름</th><th class="w-s">약칭</th><th>색</th><th></th></tr></thead><tbody>
+        ${d.subjects.map((x, i) => `<tr><td style="white-space:nowrap"><button class="icon-btn" data-act="subj-move" data-i="${i}" data-v="-1" ${i ? "" : "disabled"}>↑</button> <button class="icon-btn" data-act="subj-move" data-i="${i}" data-v="1" ${i < d.subjects.length - 1 ? "" : "disabled"}>↓</button></td>
+          <td>${inp(`subjects.${i}.name`, x.name)}</td><td class="w-s">${inp(`subjects.${i}.short`, x.short, 'maxlength="4" placeholder="선택"')}</td>
+          <td>${colorPick(i, x.color)}</td><td><button class="icon-btn" data-act="subj-del" data-i="${i}" title="지우기">✕</button></td></tr>`).join("")}
+        </tbody></table></div></section>
+      <section class="panel"><div class="row-between"><h3 class="h3">특별실 · 장소</h3><button class="btn sm" data-act="room-add">＋ 장소 추가</button></div>
+        <p class="hint">학급 교실(1-1 교실 등)은 자동으로 생깁니다. 운동장처럼 여러 학급이 함께 쓰는 곳은 '여러 학급 동시 사용'을 켜면 겹침 경고가 나오지 않습니다.</p>
+        <div class="tbl-wrap"><table class="tbl"><thead><tr><th>장소 이름</th><th>여러 학급 동시 사용</th><th></th></tr></thead><tbody>
+        ${d.rooms.map((r, i) => `<tr><td>${inp(`rooms.${i}.name`, r.name)}</td><td><label class="check"><input type="checkbox" data-s="rooms.${i}.multi" data-bool="1" ${r.multi ? "checked" : ""}><span>가능</span></label></td>
+          <td><button class="icon-btn" data-act="room-del" data-i="${i}">✕</button></td></tr>`).join("") || `<tr><td colspan="3" class="hint">없음</td></tr>`}
+        </tbody></table></div></section>`;
+  }
+  function setPeople(d) {
+    const s = d;
+    const codes = A.set.codes || {};
+    const clsOpts = (cur) => `<option value="">—</option>${T.classList(s).map((c) => `<option ${cur === c.id ? "selected" : ""}>${c.id}</option>`).join("")}`;
+    const subjOpts = (cur) => `<option value="">—</option>${s.subjects.map((x) => `<option value="${E(x.id)}" ${cur === x.id ? "selected" : ""}>${E(x.name)}</option>`).join("")}`;
+    const roomOpts = (cur) => `<option value="">학급 교실</option>${s.rooms.map((r) => `<option value="${E(r.id)}" ${cur === r.id ? "selected" : ""}>${E(r.name)}</option>`).join("")}`;
+    const rows = d.people.map((p, i) => ({ p, i })).sort((a, b) => {
+      const o = T.ROLE_ORDER.indexOf(a.p.role) - T.ROLE_ORDER.indexOf(b.p.role);
+      if (o) return o;
+      return a.p.role === "homeroom" ? T.clsKey(a.p.cls) - T.clsKey(b.p.cls) : a.i - b.i;
+    });
+    const saved = new Set((sc().people || []).map((p) => p.id));
+    const missingHr = T.classList(s).filter((c) => !d.people.some((p) => p.role === "homeroom" && p.cls === c.id)).length;
+    return `<section class="panel">
+      <div class="row-between"><h3 class="h3">선생님 · 강사 (${d.people.length}명)</h3>
+        <div class="btn-row">${missingHr ? `<button class="btn sm primary" data-act="auto-hr">담임 자리 ${missingHr}개 만들기</button>` : ""}
+          <button class="btn sm" data-act="person-add" data-role="homeroom">＋ 담임</button><button class="btn sm" data-act="person-add" data-role="subject">＋ 교과전담</button><button class="btn sm" data-act="person-add" data-role="instructor">＋ 강사</button></div></div>
+      <p class="hint">저장하면 새 선생님마다 <b>인증코드</b>가 자동으로 만들어집니다. 코드를 나눠 주면 그 선생님은 자기 시간표만 고칠 수 있습니다. 교과전담·강사는 담당 과목·기본 장소를 정해 두면 입력할 때 미리 골라집니다.</p>
+      <div class="tbl-wrap"><table class="tbl"><thead><tr><th>이름</th><th>구분</th><th class="w-s">담임 학급</th><th>담당 과목</th><th>기본 장소</th><th>인증코드</th><th></th></tr></thead><tbody>
+      ${rows.map(({ p, i }) => `<tr>
+        <td>${inp(`people.${i}.name`, p.name, `placeholder="${p.role === "homeroom" && p.cls ? p.cls + " 담임" : "이름"}"`)}</td>
+        <td><select data-s="people.${i}.role" data-structural="1">${T.ROLE_ORDER.map((r) => `<option value="${r}" ${p.role === r ? "selected" : ""}>${T.ROLES[r]}</option>`).join("")}</select></td>
+        <td class="w-s">${p.role === "homeroom" ? `<select data-s="people.${i}.cls" data-structural="1">${clsOpts(p.cls)}</select>` : ""}</td>
+        <td>${p.role !== "homeroom" ? `<select data-s="people.${i}.subject">${subjOpts(p.subject)}</select>` : ""}</td>
+        <td>${p.role !== "homeroom" ? `<select data-s="people.${i}.room">${roomOpts(p.room)}</select>` : ""}</td>
+        <td style="white-space:nowrap">${codes[p.id] ? `<span class="code">${E(codes[p.id])}</span> <button class="link-btn" data-act="code-renew" data-id="${E(p.id)}">새로</button>` : saved.has(p.id) ? `<button class="btn sm" data-act="code-renew" data-id="${E(p.id)}">코드 만들기</button>` : `<span class="hint">저장하면 생김</span>`}</td>
+        <td><button class="icon-btn" data-act="person-del" data-i="${i}" title="지우기">✕</button></td></tr>`).join("") || `<tr><td colspan="7" class="hint">아직 없습니다. '담임 자리 만들기'로 학급마다 담임을 한 번에 만들 수 있습니다.</td></tr>`}
+      </tbody></table></div>
+      <div class="btn-row"><button class="btn" data-act="slips" ${Object.keys(codes).length ? "" : "disabled"}>인증코드 안내문 PDF (잘라서 나눠 주기)</button>
+        <button class="btn ghost" data-act="codes-csv" ${Object.keys(codes).length ? "" : "disabled"}>코드 목록 CSV</button></div>
+    </section>`;
+  }
+  function setManage() {
+    return `<section class="panel"><h3 class="h3">관리자 코드</h3><p class="hint">관리자 코드를 바꾸면 다른 기기에서 관리자로 들어와 있던 사람도 다시 넣어야 합니다.</p>
+        <div><button class="btn" data-act="admin-code">관리자 코드 바꾸기</button></div></section>
+      <section class="panel"><h3 class="h3">백업</h3><p class="hint">학교 설정과 모든 시간표를 파일 하나로 받습니다. 인증코드는 담기지 않습니다(불러온 뒤 새로 만들어짐).</p>
+        <div class="btn-row"><button class="btn" data-act="backup">백업 파일 받기 (JSON)</button>
+        <label class="btn ghost">백업 불러오기<input type="file" accept=".json,application/json" data-on="restore" hidden></label></div></section>
+      <section class="panel danger-zone"><h3 class="h3">새 학기 준비</h3><p class="hint">학교 설정과 선생님·인증코드는 그대로 두고, 입력된 시간표만 모두 지웁니다.</p>
+        <div><button class="btn danger" data-act="clear-all">모든 시간표 지우기</button></div></section>`;
+  }
+
+  function setPath(obj, path, val) {
+    const ks = path.split(".");
+    let o = obj;
+    ks.slice(0, -1).forEach((k) => (o = o[k]));
+    o[ks[ks.length - 1]] = val;
+  }
+  function validate(d) {
+    const errs = [];
+    if (!String(d.name || "").trim()) errs.push("학교 이름을 넣어 주세요.");
+    if (!d.days.length) errs.push("요일을 하나 이상 고르세요.");
+    const names = d.subjects.map((x) => x.name.trim());
+    if (names.some((n) => !n)) errs.push("이름이 빈 과목이 있습니다.");
+    if (new Set(names).size !== names.length) errs.push("같은 이름의 과목이 두 개 있습니다.");
+    if (d.rooms.some((r) => !String(r.name || "").trim())) errs.push("이름이 빈 장소가 있습니다.");
+    const seen = {};
+    d.people.forEach((p) => {
+      if (p.role !== "homeroom") return;
+      if (p.cls && !T.hasClass(d, p.cls)) errs.push(`${p.name || "담임"}: ${p.cls} 반이 없습니다(학급 수 확인).`);
+      if (p.cls) { if (seen[p.cls]) errs.push(`${p.cls} 담임이 두 명입니다.`); seen[p.cls] = 1; }
+    });
+    return errs;
+  }
+  async function saveSettings(btn) {
+    const d = draft();
+    d.periods = Number(d.periods) || 6;
+    d.times = d.times.slice(0, 9);
+    d.classCounts = d.classCounts.slice(0, d.level === "elem" ? 6 : 3).map((n) => Math.max(0, Math.min(30, Number(n) || 0)));
+    d.name = String(d.name).trim();
+    d.year = Number(d.year) || "";
+    const errs = validate(d);
+    if (errs.length) { T.toast(errs[0], "error"); return; }
+    await T.busy(btn, async () => {
+      try {
+        const before = new Set((sc().people || []).map((p) => p.id));
+        const after2 = new Set(d.people.map((p) => p.id));
+        const out = T.clone(d);
+        out.updatedAt = new Date().toISOString();
+        await store.saveSchool(A.sid, out);
+        for (const pid of before) if (!after2.has(pid)) await store.removePerson(A.sid, pid);
+        const codes = A.set.codes || {};
+        let made = 0;
+        for (const p of d.people) if (!codes[p.id]) { const c = T.newCode(); await store.setCode(A.sid, p.id, c); codes[p.id] = c; made++; }
+        A.set.codes = codes;
+        A.set.dirty = false; A.set.draft = null;
+        A.school = out; A.idx = T.buildIndex(out, A.slots);
+        T.toast(made ? `저장했습니다. 인증코드 ${made}개를 새로 만들었습니다.` : "저장했습니다.");
+        render();
+      } catch (e) {
+        T.toast(e.message || "저장하지 못했습니다.", "error");
+        if (e instanceof T.Denied) { A.me.admin = false; saveMe(); render(); }
+      }
+    });
+  }
+
+  async function renewCode(pid) {
+    if (A.set.codes && A.set.codes[pid] && !(await T.confirm(`${T.personName(sc(), pid)} 선생님 인증코드를 새로 만들까요?\n예전 코드는 더 이상 쓸 수 없습니다.`, { ok: "새로 만들기" }))) return;
+    try {
+      const c = T.newCode();
+      await store.setCode(A.sid, pid, c);
+      A.set.codes = { ...(A.set.codes || {}), [pid]: c };
+      T.toast(`새 코드: ${c}`);
+      render();
+    } catch (e) { T.toast(e.message, "error"); }
+  }
+  function openAdminCode() {
+    const m = T.modal({
+      title: "관리자 코드 바꾸기",
+      body: `<form class="stack" id="ac-form"><div class="grid-form two">
+        <label class="field"><span>새 관리자 코드</span><input name="a" type="password" class="code-input" autocomplete="new-password"></label>
+        <label class="field"><span>한 번 더</span><input name="b" type="password" class="code-input" autocomplete="new-password"></label></div>
+        <p class="errs" hidden></p><div class="row-end"><button type="button" class="btn ghost" data-close>취소</button><button class="btn primary">바꾸기</button></div></form>`,
+    });
+    const f = m.el.querySelector("#ac-form");
+    f.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const a = T.cleanCode(f.a.value), err = f.querySelector(".errs");
+      if (a.length < 6) { err.hidden = false; err.textContent = "영문·숫자 6자 이상으로 정하세요."; return; }
+      if (a !== T.cleanCode(f.b.value)) { err.hidden = false; err.textContent = "두 번 넣은 코드가 다릅니다."; return; }
+      await T.busy(f.querySelector(".btn.primary"), async () => {
+        try { await store.setCode(A.sid, ADMIN, a); if (store.mode === "demo") await store.login(A.sid, ADMIN, a); m.close(); T.toast("관리자 코드를 바꿨습니다."); }
+        catch (ex) { err.hidden = false; err.textContent = ex.message; }
+      });
+    });
+  }
+  async function makeSlips(btn) {
+    const s = sc(), codes = A.set.codes || {};
+    const list = T.peopleSorted(s).filter((p) => codes[p.id]).map((p) => ({ sid: A.sid, name: T.personName(s, p.id), desc: T.personDesc(s, p.id), code: codes[p.id] }));
+    const url = location.href.split("#")[0].replace(/\?.*$/, "");
+    const pages = T.buildSlipPages(s, list, /^https?:/.test(url) && !/claude|localhost|usercontent/.test(url) ? url : "시간표 사이트");
+    await T.busy(btn, async () => {
+      try { await T.exportPDF(pages, "portrait", `${s.name}_인증코드_안내문`); } catch (e) { T.toast(e.message, "error"); }
+    });
+  }
+  function codesCsv() {
+    const s = sc(), codes = A.set.codes || {};
+    const rows = [["이름", "구분", "학급/과목", "인증코드"], ...T.peopleSorted(s).filter((p) => codes[p.id]).map((p) => [T.personName(s, p.id), T.ROLES[p.role], p.role === "homeroom" ? p.cls : T.subjectName(s, p.subject || ""), codes[p.id]])];
+    const csv = "﻿" + rows.map((r) => r.map((v) => `"${String(v ?? "").replace(/"/g, '""')}"`).join(",")).join("\r\n");
+    T.saveFile(new Blob([csv], { type: "text/csv" }), `${s.name}_인증코드.csv`);
+  }
+  async function restore(file) {
+    let data;
+    try { data = JSON.parse(await file.text()); } catch (e) { T.toast("백업 파일을 읽지 못했습니다.", "error"); return; }
+    if (!data || data.format !== "tt-backup" || !data.school) { T.toast("이 프로그램의 백업 파일이 아닙니다.", "error"); return; }
+    if (!(await T.confirm(`백업(${data.school.name}, ${data.savedAt ? data.savedAt.slice(0, 10) : ""})으로 학교 설정과 모든 시간표를 바꿀까요?\n지금 자료는 사라집니다.`, { ok: "불러오기", danger: true }))) return;
+    try {
+      const before = (sc().people || []).map((p) => p.id);
+      await store.saveSchool(A.sid, data.school);
+      await store.putAllSlots(A.sid, data.slots || {});
+      const keep = new Set(data.school.people.map((p) => p.id));
+      for (const pid of before) if (!keep.has(pid)) await store.removePerson(A.sid, pid);
+      A.set.codes = null; A.set.codesFor = null; A.set.draft = null; A.set.dirty = false;
+      const codes = await store.getCodes(A.sid);
+      for (const p of data.school.people) if (!codes[p.id]) await store.setCode(A.sid, p.id, T.newCode());
+      A.set.codes = null; A.set.codesFor = null;
+      T.toast("백업을 불러왔습니다.");
+      render();
+    } catch (e) { T.toast(e.message, "error"); }
+  }
+
+  /* ───────── 이벤트 ───────── */
+  const actions = {
+    open: (el) => go(`/s/${el.dataset.sid}`),
+    "new-school": openNewSchool,
+    "reset-example": async () => { if (await T.confirm("체험 학교를 처음 상태로 되돌릴까요?")) { await store.resetExample(); A.me = { pid: null, admin: false }; saveMe(); openSchool(T.EXAMPLE_ID); render(); } },
+    tab: (el) => go(`/s/${A.sid}/${el.dataset.tab}`),
+    login: () => openLogin(),
+    "login-admin": () => openLogin({ admin: true }),
+    logout,
+    "view-kind": (el) => { A.view.kind = el.dataset.v; A.view.id = null; render(); },
+    "view-id": (el) => { A.view.id = el.dataset.id; render(); },
+    "mx-basis": (el) => { A.view.mx = el.dataset.v; render(); },
+    "mx-grade": (el) => { A.view.mxGrade = Number(el.dataset.v); render(); },
+    "to-edit": () => {
+      const v = A.view;
+      if (v.kind === "person" && A.me.admin && v.id !== A.me.pid) { A.ed.actAs = v.id; A.ed.forActor = null; }
+      if (v.kind === "class" && actor()) { A.ed.forActor = null; syncEdDefaults(); A.ed.mode = "class"; A.ed.cls = v.id; }
+      go(`/s/${A.sid}/edit`);
+    },
+    "to-print": (el) => {
+      const t = el.dataset.type;
+      A.pr.type = t;
+      if (t === "all") A.pr.basis = el.dataset.basis || "class";
+      else { A.pr.ids[t] = [el.dataset.id]; A.pr.perPage = 1; }
+      go(`/s/${A.sid}/print`);
+    },
+    "ed-mode": (el) => { A.ed.mode = el.dataset.v; render(); },
+    "ed-cls": (el) => { A.ed.cls = el.dataset.id; render(); },
+    brush: (el) => {
+      A.ed.brush = el.dataset.erase ? (A.ed.brush && A.ed.brush.erase ? null : { erase: true }) : A.ed.brush && A.ed.brush.s === el.dataset.s ? null : { s: el.dataset.s };
+      render();
+    },
+    wbrush: (el) => {
+      A.ed.wbrush = el.dataset.erase ? (A.ed.wbrush && A.ed.wbrush.erase ? null : { erase: true }) : A.ed.wbrush && A.ed.wbrush.cls === el.dataset.id ? null : { cls: el.dataset.id };
+      render();
+    },
+    cell: (el) => cellClick(Number(el.dataset.d), Number(el.dataset.p)),
+    "clear-mine": async (el) => {
+      const pid = actor(), cls = el.dataset.cls;
+      if (!(await T.confirm(cls ? `${cls}에 넣은 ${T.personName(sc(), pid)} 선생님 시간을 모두 지울까요?` : `${T.personName(sc(), pid)} 선생님 시간표를 모두 지울까요?`, { ok: "지우기", danger: true }))) return;
+      const e = myEntries(pid);
+      Object.keys(e).forEach((k) => { if (!cls || k.startsWith(cls + "|")) delete e[k]; });
+      setEntries(pid, e);
+    },
+    "pr-type": (el) => { A.pr.type = el.dataset.v; render(); },
+    "pr-id": (el) => { const ids = prIds(A.pr.type); const i = ids.indexOf(el.dataset.id); i >= 0 ? ids.splice(i, 1) : ids.push(el.dataset.id); render(); },
+    "pr-all": () => {
+      const s = sc();
+      A.pr.ids[A.pr.type] = A.pr.type === "class" ? T.classList(s).map((c) => c.id) : A.pr.type === "person" ? T.peopleSorted(s).map((p) => p.id) : T.roomList(s).map((r) => r.id);
+      render();
+    },
+    "pr-subject": () => { A.pr.ids.person = T.peopleSorted(sc()).filter((p) => p.role !== "homeroom").map((p) => p.id); render(); },
+    "pr-none": () => { A.pr.ids[A.pr.type] = []; render(); },
+    "pr-grade": (el) => { const g = Number(el.dataset.g); const i = A.pr.grades.indexOf(g); i >= 0 ? A.pr.grades.splice(i, 1) : A.pr.grades.push(g); render(); },
+    "pr-gstyle": (el) => { A.pr.gradeStyle = el.dataset.v; render(); },
+    "pr-basis": (el) => { A.pr.basis = el.dataset.v; render(); },
+    "pr-orient": (el) => { A.pr.orient = el.dataset.v; render(); },
+    "pr-per": (el) => { A.pr.perPage = Number(el.dataset.v); render(); },
+    export: (el) => doExport(el.dataset.kind, el),
+    "set-sec": (el) => { A.set.sec = el.dataset.v; render(); },
+    "set-save": (el) => saveSettings(el),
+    "set-revert": () => { A.set.draft = null; A.set.dirty = false; render(); },
+    "set-day": (el) => { const d = draft(), x = Number(el.dataset.v); d.days = d.days.includes(x) ? d.days.filter((y) => y !== x) : [...d.days, x].sort(); markDirty(); render(); },
+    "set-times-default": () => { const d = draft(); d.times = T.defaultTimes(d.level).map(([s, e]) => ({ s, e })); markDirty(); render(); },
+    "subj-add": () => { draft().subjects.push({ id: T.uid("s"), name: "", short: "", color: T.COLOR_KEYS[draft().subjects.length % 12] }); markDirty(); render(); },
+    "subj-del": async (el) => {
+      const d = draft(), i = Number(el.dataset.i), x = d.subjects[i];
+      const used = Object.values(A.slots).reduce((n, doc) => n + Object.values((doc && doc.e) || {}).filter((v) => v.s === x.id).length, 0);
+      if (used && !(await T.confirm(`'${x.name}' 과목으로 넣은 칸이 ${used}개 있습니다. 그래도 지울까요?`, { ok: "지우기", danger: true }))) return;
+      d.subjects.splice(i, 1); markDirty(); render();
+    },
+    "subj-move": (el) => { const d = draft(), i = Number(el.dataset.i), j = i + Number(el.dataset.v); [d.subjects[i], d.subjects[j]] = [d.subjects[j], d.subjects[i]]; markDirty(); render(); },
+    "subj-color": (el) => { draft().subjects[Number(el.dataset.i)].color = el.dataset.v; markDirty(); render(); },
+    "room-add": () => { draft().rooms.push({ id: T.uid("r"), name: "", multi: false }); markDirty(); render(); },
+    "room-del": (el) => { draft().rooms.splice(Number(el.dataset.i), 1); markDirty(); render(); },
+    "person-add": (el) => { draft().people.push({ id: T.uid("p"), name: "", role: el.dataset.role, cls: "", subject: "", room: "" }); markDirty(); render(); },
+    "person-del": async (el) => {
+      const d = draft(), i = Number(el.dataset.i), p = d.people[i];
+      const n = Object.keys((A.slots[p.id] && A.slots[p.id].e) || {}).length;
+      if (!(await T.confirm(`${T.personName(d, p.id)}${p.role === "homeroom" ? "" : " 선생님"}을(를) 지울까요?${n ? `\n이 선생님이 넣은 시간표 ${n}칸도 저장할 때 함께 지워집니다.` : ""}`, { ok: "지우기", danger: true }))) return;
+      d.people.splice(i, 1); markDirty(); render();
+    },
+    "auto-hr": () => {
+      const d = draft();
+      T.classList(d).forEach((c) => { if (!d.people.some((p) => p.role === "homeroom" && p.cls === c.id)) d.people.push({ id: T.uid("p"), name: "", role: "homeroom", cls: c.id, subject: "", room: "" }); });
+      markDirty(); render();
+      T.toast("담임 자리를 만들었습니다. 이름을 넣고 저장하세요.");
+    },
+    "code-renew": (el) => renewCode(el.dataset.id),
+    slips: (el) => makeSlips(el),
+    "codes-csv": codesCsv,
+    "admin-code": openAdminCode,
+    backup: () => {
+      const data = { format: "tt-backup", v: 1, sid: A.sid, savedAt: new Date().toISOString(), school: sc(), slots: A.slots };
+      T.saveFile(new Blob([JSON.stringify(data, null, 1)], { type: "application/json" }), `${sc().name}_시간표_백업_${new Date().toISOString().slice(0, 10)}.json`);
+    },
+    "clear-all": async () => {
+      if (!(await T.confirm("입력된 시간표를 모두 지울까요? 되돌릴 수 없습니다.\n(필요하면 먼저 백업 파일을 받아 두세요.)", { ok: "모두 지우기", danger: true }))) return;
+      try { await store.clearSlots(A.sid); A.slots = {}; A.idx = T.buildIndex(sc(), {}); T.toast("모두 지웠습니다."); render(); } catch (e) { T.toast(e.message, "error"); }
+    },
+  };
+
+  app.addEventListener("click", (e) => {
+    const el = e.target.closest("[data-act]");
+    if (!el || !app.contains(el)) return;
+    const fn = actions[el.dataset.act];
+    if (fn) { e.preventDefault(); fn(el, e); }
+  });
+  app.addEventListener("submit", (e) => {
+    const f = e.target.closest("[data-form]");
+    if (!f) return;
+    e.preventDefault();
+    if (f.dataset.form === "join") {
+      const sid = T.cleanSid(f.sid.value);
+      if (!sid) { T.toast("학교 코드를 넣어 주세요.", "error"); return; }
+      go(`/s/${encodeURIComponent(sid)}`);
+    }
+  });
+  const onField = (e) => {
+    const el = e.target;
+    if (el.dataset.s) {
+      let v = el.dataset.bool ? el.checked : el.value;
+      if (el.dataset.num) v = Number(v) || 0;
+      const d = draft();
+      setPath(d, el.dataset.s, v);
+      if (el.dataset.s === "level" && e.type === "change") {
+        const fresh = T.newSchool(d.name, v);
+        d.classCounts = fresh.classCounts;
+        if (!(Object.keys(A.slots).length)) { d.subjects = fresh.subjects; d.rooms = fresh.rooms; d.times = fresh.times; d.periods = fresh.periods; }
+      }
+      if (el.dataset.s.endsWith(".role") && e.type === "change") { const i = Number(el.dataset.s.split(".")[1]); if (v !== "homeroom") d.people[i].cls = ""; else { d.people[i].subject = ""; d.people[i].room = ""; } }
+      markDirty();
+      if (e.type === "change" && (el.dataset.structural || el.dataset.s.startsWith("classCounts"))) render();
+      return;
+    }
+    const on = el.dataset.on;
+    if (!on || (e.type === "input" && el.tagName === "SELECT")) return;
+    if (on === "act-as" && e.type === "change") { A.ed.actAs = el.value || null; A.ed.forActor = null; render(); }
+    if (on === "ed-room") { A.ed.room = el.value; render(); }
+    if (on === "ed-cls" && e.type === "change") { A.ed.cls = el.value; render(); }
+    if (on === "ed-subj") { A.ed.subj = el.value; render(); }
+    if (on === "ed-wroom") { A.ed.wroom = el.value; render(); }
+    if (on === "pr-hours") { A.pr.hours = el.checked; render(); }
+    if (on === "hro" && e.type === "change") { draft().homeroomOpen = el.value === "1"; markDirty(); }
+    if (on === "restore" && e.type === "change" && el.files[0]) restore(el.files[0]);
+  };
+  app.addEventListener("input", (e) => { if (e.target.dataset.s && e.target.tagName !== "SELECT" && e.target.type !== "checkbox") onField(e); });
+  app.addEventListener("change", onField);
+
+  /* ───────── 시작 ───────── */
+  (async () => {
+    app.innerHTML = `<div class="loading">불러오는 중…</div>`;
+    try { store = await T.pickStore(); T.store = store; await store.init(); }
+    catch (e) {
+      app.innerHTML = `<div class="wrap main"><div class="panel narrow"><h2 class="h2">연결하지 못했습니다</h2><p class="muted">${E(e.message || e)}</p>
+        <div class="btn-row"><button class="btn primary" onclick="location.reload()">다시 시도</button></div></div></div>`;
+      return;
+    }
+    document.title = cfg.SITE_NAME || "함께 짜는 시간표";
+    route();
+  })();
+})();
+
+</script>
+</body>
+</html>

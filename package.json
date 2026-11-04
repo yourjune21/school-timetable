@@ -1,0 +1,12 @@
+{
+  "name": "school-timetable",
+  "private": true,
+  "description": "함께 짜는 시간표 — Cloudflare Workers + Durable Objects",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy"
+  },
+  "devDependencies": {
+    "wrangler": "^4.157.0"
+  }
+}

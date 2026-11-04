@@ -1,0 +1,16 @@
+{
+  // 함께 짜는 시간표 — Cloudflare 설정
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "school-timetable",
+  "main": "src/worker.js",
+  "compatibility_date": "2026-09-01",
+  "assets": { "directory": "./public", "binding": "ASSETS" },
+  "durable_objects": {
+    "bindings": [{ "name": "SCHOOL", "class_name": "SchoolDO" }]
+  },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["SchoolDO"] }],
+  "vars": {
+    // 학교를 다 만든 뒤 "false"로 바꾸고 다시 배포하면 새 학교 만들기가 막힙니다.
+    "ALLOW_NEW_SCHOOL": "true"
+  }
+}
