@@ -22,13 +22,20 @@ const SID_RE = /^[a-z0-9][a-z0-9-]{2,29}$/;
 const PID_RE = /^[A-Za-z0-9_-]{1,40}$/;
 const KEY_RE = /^\d{1,2}-\d{1,2}\|[1-6]\|[1-9]$/;
 const ADMIN = "_admin";
+const REGISTRY = "_registry";
+const norm = (v) => String(v || "").toLowerCase().replace(/[\s·.\-_()]/g, "");
 
 export default {
   async fetch(req, env) {
     const url = new URL(req.url);
     if (!url.pathname.startsWith("/api/")) return env.ASSETS.fetch(req);
     if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: CORS });
-    if (url.pathname === "/api/health") return json({ ok: true, app: "tt", v: 1, version: VERSION, allowNew: env.ALLOW_NEW_SCHOOL !== "false" });
+    if (url.pathname === "/api/health") return json({ ok: true, app: "tt", v: 1, version: VERSION, allowNew: env.ALLOW_NEW_SCHOOL !== "false", search: true });
+    if (url.pathname === "/api/search") {
+      // 첫 화면 학교 검색: 학교 목록은 '_registry' 라는 이름의 저장소 하나에 모아 둠 (학교 코드 규칙과 겹치지 않는 이름)
+      const q = String(url.searchParams.get("q") || "").slice(0, 40);
+      return env.SCHOOL.get(env.SCHOOL.idFromName(REGISTRY)).fetch(new Request(`https://school.internal/reg/search?q=${encodeURIComponent(q)}`, { headers: { "x-tt-sid": REGISTRY } }));
+    }
     const m = url.pathname.match(/^\/api\/s\/([^/]+)(\/.*)$/);
     if (!m || !SID_RE.test(m[1])) return fail(404, "not_found", "잘못된 주소입니다.");
     const sid = m[1];
@@ -140,10 +147,44 @@ export class SchoolDO extends DurableObject {
     return out;
   }
 
+  /* ───── 학교 목록(검색용) ───── */
+  async register(sid) {
+    if (!sid || !SID_RE.test(sid) || !this.exists()) return;
+    const sc = this.kvGet("school") || {};
+    const row = { sid, name: String(sc.name || "").slice(0, 60), listed: sc.listed !== false };
+    const mark = JSON.stringify(row);
+    if (this.kvGet("reg") === mark) return;
+    try {
+      const r = await this.env.SCHOOL.get(this.env.SCHOOL.idFromName(REGISTRY)).fetch(new Request("https://school.internal/reg/put", { method: "POST", headers: { "x-tt-sid": REGISTRY, "content-type": "application/json" }, body: mark }));
+      if (r.ok) this.kvSet("reg", mark);
+    } catch (e) {}
+  }
+  regTable() { this.sql.exec("CREATE TABLE IF NOT EXISTS reg (sid TEXT PRIMARY KEY, name TEXT NOT NULL, key TEXT NOT NULL, listed INTEGER NOT NULL, at INTEGER NOT NULL)"); }
+  async regFetch(req, path) {
+    this.regTable();
+    if (path === "/reg/put" && req.method === "POST") {
+      const b = await req.json().catch(() => ({}));
+      if (!SID_RE.test(b.sid || "")) return fail(400, "bad", "잘못된 요청입니다.");
+      this.sql.exec("INSERT INTO reg (sid, name, key, listed, at) VALUES (?, ?, ?, ?, ?) ON CONFLICT(sid) DO UPDATE SET name=excluded.name, key=excluded.key, listed=excluded.listed, at=excluded.at",
+        b.sid, String(b.name || ""), norm(b.name) + " " + b.sid, b.listed ? 1 : 0, Date.now());
+      return json({ ok: true });
+    }
+    if (path === "/reg/search") {
+      const q = norm(new URL(req.url).searchParams.get("q"));
+      if (!q) return json({ results: [] });
+      const like = "%" + q.replace(/[%_]/g, "") + "%";
+      const rows = this.sql.exec("SELECT sid, name FROM reg WHERE listed = 1 AND key LIKE ? ORDER BY (CASE WHEN sid = ? THEN 0 WHEN key LIKE ? THEN 1 ELSE 2 END), name LIMIT 10", like, q, q + "%").toArray();
+      return json({ results: rows });
+    }
+    return fail(404, "not_found", "잘못된 주소입니다.");
+  }
+
   /* ───── 요청 처리 ───── */
   async fetch(req) {
     const url = new URL(req.url);
     const path = url.pathname, method = req.method;
+    const sidH = req.headers.get("x-tt-sid") || "";
+    if (sidH === REGISTRY) return this.regFetch(req, path);
     try {
       if (path === "/ws") {
         if (req.headers.get("upgrade") !== "websocket") return fail(426, "upgrade", "WebSocket 연결이 필요합니다.");
@@ -153,6 +194,7 @@ export class SchoolDO extends DurableObject {
       }
       if (path === "/state" && method === "GET") {
         if (!this.exists()) return json({ school: null, slots: {} });
+        this.ctx.waitUntil(this.register(sidH)); // 예전에 만든 학교도 처음 열릴 때 검색 목록에 올라감
         return json({ school: this.kvGet("school"), slots: this.allSlots() });
       }
       const body = method === "GET" ? {} : await req.json().catch(() => ({}));
@@ -168,6 +210,7 @@ export class SchoolDO extends DurableObject {
         this.kvSet("school", doc);
         this.kvSet("codes", {});
         const h = await this.setLock(ADMIN, code);
+        await this.register(sidH);
         return json({ token: this.newSession(ADMIN, h) });
       }
 
@@ -221,6 +264,7 @@ export class SchoolDO extends DurableObject {
         if (!doc) return fail(400, "bad", "학교 설정 자료가 올바르지 않습니다.");
         this.kvSet("school", doc);
         this.broadcast({ t: "school", school: doc });
+        await this.register(sidH);
         return json({ ok: true });
       }
       if (path === "/code" && method === "POST") {
