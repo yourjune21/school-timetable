@@ -257,6 +257,19 @@ export class SchoolDO extends DurableObject {
         return json({ ok: true });
       }
 
+      // 선생님이 자기 기본 교실을 정함 (학교 설정 중 자기 줄의 room 하나만)
+      if (path === "/me-room" && method === "POST") {
+        const pid = String(body.pid || ""), room = String(body.room || "");
+        if (!admin && !me.has(pid)) return fail(403, "denied", "권한이 없습니다. 인증코드로 다시 들어와 주세요.");
+        const p = (school.people || []).find((x) => x.id === pid);
+        if (!p) return fail(400, "bad", "없는 선생님입니다.");
+        if (room && !(school.rooms || []).some((r) => r.id === room)) return fail(400, "bad", "없는 장소입니다.");
+        p.room = room;
+        this.kvSet("school", school);
+        this.broadcast({ t: "school", school });
+        return json({ ok: true });
+      }
+
       // 아래는 관리자만
       if (!admin) return fail(403, "denied", "관리자만 할 수 있습니다.");
       if (path === "/school" && method === "PUT") {
