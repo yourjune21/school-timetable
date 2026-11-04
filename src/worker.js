@@ -50,6 +50,12 @@ export default {
         return env.SCHOOL.get(env.SCHOOL.idFromName(sid)).fetch(new Request("https://school.internal/super-admin-code", { method: "POST", headers: { "x-tt-sid": sid, "x-tt-super-ok": "1", "content-type": "application/json" }, body: JSON.stringify({ code: b.newCode || "" }) }));
       }
       if (url.pathname === "/api/super/check") return json({ ok: true });
+      if (url.pathname === "/api/super/enter") {
+        // 최고관리자가 학교관리자 코드 없이 그 학교 기본설정에 들어감 (관리자 세션 발급)
+        const sid = String(b.sid || "");
+        if (!SID_RE.test(sid)) return fail(400, "bad", "학교 코드가 올바르지 않습니다.");
+        return env.SCHOOL.get(env.SCHOOL.idFromName(sid)).fetch(new Request("https://school.internal/super-session", { method: "POST", headers: { "x-tt-sid": sid, "x-tt-super-ok": "1", "content-type": "application/json" }, body: "{}" }));
+      }
       return fail(404, "not_found", "잘못된 주소입니다.");
     }
     const m = url.pathname.match(/^\/api\/s\/([^/]+)(\/.*)$/);
@@ -157,7 +163,7 @@ export class SchoolDO extends DurableObject {
   cleanSchool(doc) {
     if (!doc || typeof doc !== "object" || Array.isArray(doc)) return null;
     const s = JSON.stringify(doc);
-    if (s.length > 300000) return null;
+    if (s.length > 900000) return null; // 보관함(지난 학기 3개)까지 담아도 넉넉하게 (WebSocket 1MB 아래)
     if (!Array.isArray(doc.people) || !Array.isArray(doc.subjects) || !Array.isArray(doc.classCounts)) return null;
     if (doc.people.some((p) => !p || !PID_RE.test(p.id || "") || p.id === ADMIN)) return null;
     return JSON.parse(s);
@@ -250,12 +256,20 @@ export class SchoolDO extends DurableObject {
       const body = method === "GET" ? {} : await req.json().catch(() => ({}));
       const ip = req.headers.get("x-tt-ip") || "local";
 
+      if (path === "/super-session" && method === "POST") {
+        if (req.headers.get("x-tt-super-ok") !== "1") return fail(403, "super", "최고관리자만 할 수 있습니다.");
+        if (!this.exists()) return fail(404, "not_found", "없는 학교입니다.");
+        const lock = this.sql.exec("SELECT h FROM locks WHERE pid=?", ADMIN).toArray()[0];
+        if (!lock) return fail(400, "bad", "학교관리자 코드가 없습니다. 먼저 코드를 정하세요.");
+        return json({ ok: true, token: this.newSession(ADMIN, lock.h) });
+      }
       if (path === "/super-admin-code" && method === "POST") {
         if (req.headers.get("x-tt-super-ok") !== "1") return fail(403, "super", "최고관리자만 할 수 있습니다.");
         if (!this.exists()) return fail(404, "not_found", "없는 학교입니다.");
         const code = cleanCode(body.code);
         if (code.length < 6) return fail(400, "bad", "학교관리자 코드는 영문·숫자 6자 이상입니다.");
         await this.setLock(ADMIN, code);
+        this.kvSet("admincode", code);
         return json({ ok: true });
       }
       if (path === "/create" && method === "POST") {
@@ -269,6 +283,7 @@ export class SchoolDO extends DurableObject {
         this.kvSet("school", doc);
         this.kvSet("codes", {});
         const h = await this.setLock(ADMIN, code);
+        this.kvSet("admincode", code);
         await this.register(sidH);
         return json({ token: this.newSession(ADMIN, h) });
       }
@@ -346,13 +361,13 @@ export class SchoolDO extends DurableObject {
         if (!(pid === ADMIN || (PID_RE.test(pid) && people.has(pid)))) return fail(400, "bad", "없는 선생님입니다.");
         if (code.length < (pid === ADMIN ? 6 : 4)) return fail(400, "bad", pid === ADMIN ? "관리자 코드는 6자 이상입니다." : "코드가 너무 짧습니다.");
         const h = await this.setLock(pid, code);
-        if (pid === ADMIN) return json({ ok: true, token: this.newSession(ADMIN, h) });
+        if (pid === ADMIN) { this.kvSet("admincode", code); return json({ ok: true, token: this.newSession(ADMIN, h) }); }
         const codes = this.kvGet("codes") || {};
         codes[pid] = code;
         this.kvSet("codes", codes);
         return json({ ok: true });
       }
-      if (path === "/codes" && method === "GET") return json({ codes: this.kvGet("codes") || {} });
+      if (path === "/codes" && method === "GET") return json({ codes: this.kvGet("codes") || {}, admin: this.kvGet("admincode") || "" });
       if (path === "/remove" && method === "POST") {
         const pid = String(body.pid || "");
         if (!PID_RE.test(pid) || pid === ADMIN) return fail(400, "bad", "잘못된 요청입니다.");
