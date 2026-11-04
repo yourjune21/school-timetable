@@ -681,6 +681,15 @@ tr.drop-below td { box-shadow: inset 0 -3px 0 var(--brand); }
 .brk-min .numf { width: 80px; }
 .tbl.times.seq td .icon-btn.sm { vertical-align: middle; }
 .subj-row .subj-name { flex: 0 0 128px; }
+/* 학년별 주당 시수 합계 */
+.hsums { display: inline-flex; gap: 6px; flex-wrap: wrap; }
+.hs { font-size: 0.8rem; font-weight: 600; padding: 2px 9px; border-radius: 999px; background: var(--shade); color: var(--muted); font-variant-numeric: tabular-nums; }
+.hs b { color: var(--ink); }
+.hs.ok { background: color-mix(in srgb, var(--ok) 16%, transparent); color: var(--ok); } .hs.ok b { color: var(--ok); }
+.hs.under { background: color-mix(in srgb, var(--warn) 14%, transparent); color: var(--warn); } .hs.under b { color: var(--warn); }
+.hs.over { background: var(--danger-bg); color: var(--danger); } .hs.over b { color: var(--danger); }
+.sched-gen.top { margin: 4px 0 10px; }
+.toast { pointer-events: none; } .toast-act { pointer-events: auto; }
 
 </style>
 </head>
@@ -719,9 +728,10 @@ window.TT_CONFIG = {
  * build.py가 이 값을 서버(cloudflare/src/version.js)에도 똑같이 넣어, 화면과 서버 버전이 늘 같습니다. */
 (function () {
   const T = (window.TT = window.TT || {});
-  T.VERSION = "1.17.0";
+  T.VERSION = "1.18.0";
   T.RELEASED = "2026-11-04";
   T.CHANGES = [
+    ["1.18.0", "2026-11-04", ["과목 기본 시수를 넣는 대로 학년별 주당 합계 / 한 주 수업 칸 (맞으면 초록, 모자라면 주황, 넘으면 빨강)", "시정표 '자동으로 만들기'는 위에 하나 (모든 시정표에 적용)", "점심·중간놀이를 끌어 옮기거나 점심 위치·교시 수·쉬는 시간 길이를 바꾸면 시각이 저절로 다시 맞춰짐"]],
     ["1.17.0", "2026-11-04", ["과목마다 주당 기본 시수 (담임 자동 생성에 미리 들어감), 과목 줄을 한 줄로", "장소마다 배정된 수업 시간 수", "담임 자동 생성: 교담 과목은 회색, 시수를 넣으면 본래 색", "최고관리자 창(#/super): 모든 학교 보기 · 새 학교 · 학교관리자 코드 다시 정하기", "시정표: 점심·중간놀이·쉬는 시간 추가, ⠿ 끌어서 자리 옮기기", "시정표와 요일별 교시를 PC는 나란히, 휴대폰은 위아래로"]],
     ["1.16.0", "2026-11-04", ["↶ 되돌리기 (Ctrl+Z), 관리자 일괄 지우기 전 자동 보관·되살리기", "관리자 ✓점검: 겹침·교담 시수 부족·점심 없는 날·요일 교시 밖 칸·입력 진행률", "3단계 '확정'(모두 잠금)·다음 학기 준비", "다른 관리자가 먼저 저장했으면 덮어쓰기 전에 알림", "선생님 불가 시간 (자동 배치가 피함)", "엑셀 통합 시정표 불러오기", "과목 학년군을 시정표에 맞추기", "기본설정 메뉴 묶음·짧은 설명, 휴대폰은 요일 하나씩, 링크로 처음 들어온 선생님 안내"]],
     ["1.15.0", "2026-11-04", ["과목 학년군 추가·삭제·이름·학년·순서 바꾸기", "과목마다 '교담' 체크 → 교담 선생님·주당 시수를 고르면 교과전담 배정과 바로 연결"]],
@@ -901,6 +911,11 @@ window.TT_CONFIG = {
       return { name: T.gradesLabel(g.grades), grades: g.grades, periods, times, lunchAfter, lunch: lv ? { s: lv.split("-")[0], e: lv.split("-")[1] } : {}, dayP };
     }).filter(Boolean);
     return out.length ? out : null;
+  };
+  // 시정표 자동 만들기 설정 (학교 하나에 하나)
+  T.schedGenOf = (sc) => {
+    const old = ((sc.schedules || []).find((x) => x.gen) || {}).gen || {};
+    return { start: "09:00", lesson: 40, brk: 10, lunch: 40, ...old, ...(sc.schedGen || {}) };
   };
   // 과목을 묶어 보는 학년군 (기본설정 → 과목, 추가·삭제·순서 바꾸기)
   T.defaultSubjGroups = (level) => level === "elem"
@@ -3676,13 +3691,6 @@ window.TT_CONFIG = {
           <label class="field"><span>점심시간 위치</span><select data-s="schedules.${i}.lunchAfter" data-num="1" data-structural="1"><option value="0">표시 안 함</option>${Array.from({ length: x.periods - 1 }, (_, k) => `<option value="${k + 1}" ${x.lunchAfter === k + 1 ? "selected" : ""}>${k + 1}교시 뒤</option>`).join("")}</select></label>
         </div>
         <div class="btn-row"><button class="btn sm" data-act="sched-copy" data-i="${i}">복사해서 새 시정표</button>${d.schedules.length > 1 ? `<button class="btn sm ghost" data-act="sched-del" data-i="${i}">지우기</button>` : ""}</div></div>
-        <div class="sched-gen"><b>⚡ 자동으로 만들기</b>
-          <label>1교시 시작 <input type="time" data-s="schedules.${i}.gen.start" data-f="g${i}st" value="${E((x.gen && x.gen.start) || (x.times[0] && x.times[0].s) || "09:00")}"></label>
-          <label>수업 ${numf(`data-s="schedules.${i}.gen.lesson" data-num="1" data-f="g${i}l"`, (x.gen && x.gen.lesson) || 40, 10, 120)}분</label>
-          <label>쉬는 시간 ${numf(`data-s="schedules.${i}.gen.brk" data-num="1" data-f="g${i}b"`, (x.gen && x.gen.brk) ?? 10, 0, 60)}분</label>
-          <label>점심 ${numf(`data-s="schedules.${i}.gen.lunch" data-num="1" data-f="g${i}u"`, (x.gen && x.gen.lunch) || 40, 0, 120)}분</label>
-          <button class="btn sm primary" data-act="sched-gen" data-i="${i}">시정표 만들기</button>
-          <span class="hint">점심은 '점심시간 위치' 교시 뒤에 들어갑니다. 만든 뒤 아래에서 시각을 고칠 수 있습니다.</span></div>
         <p class="hint">쓰는 학년: ${used.length ? used.map((g) => g + "학년").join(", ") : "없음"}</p>
         <div class="sched-body"><div class="sched-times"><h4 class="h4">시정표</h4>
         <div class="tbl-wrap"><table class="tbl times seq"><thead><tr><th>순서</th><th>시작</th><th>끝</th><th>시간</th></tr></thead><tbody>
@@ -3714,9 +3722,29 @@ window.TT_CONFIG = {
     };
     return `<section class="panel"><div class="row-between"><h3 class="h3">시정표</h3><div class="btn-row">${d.level === "elem" ? `<button class="btn sm" data-act="sched-preset">학년군 기본 시정 만들기</button>` : ""}<label class="btn sm">📄 엑셀 시정표 불러오기<input type="file" accept=".xlsx" data-on="sched-xlsx" hidden></label><button class="btn sm" data-act="sched-copy" data-i="0">＋ 시정표 추가</button></div></div>
         ${more("학년마다 시정표를 고르고, 시각·점심·요일별 교시를 정합니다.", "학년마다 점심시간·교시 시각이 다르면 시정표를 여러 개 만들고 학년마다 고르세요. <b>요일별 교시</b>(예: 5·6학년은 수요일만 5교시)를 정하면 자동 생성·배치는 그 안에서만 하고, 넘는 칸에 직접 넣을 때는 한 번 더 묻습니다. 교과전담 선생님이 여러 학년을 맡아도 <b>실제 시각</b>으로 겹침을 검사합니다. 학교 통합 시정표 엑셀이 있으면 <b>엑셀 시정표 불러오기</b>로 한 번에 채울 수 있습니다.")}
+        ${(() => { const g = T.schedGenOf(d); return `<div class="sched-gen top"><b>⚡ 자동으로 만들기</b>
+          <label>1교시 시작 <input type="time" data-s="schedGen.start" data-f="gst" value="${E(g.start)}"></label>
+          <label>수업 ${numf(`data-s="schedGen.lesson" data-num="1" data-f="gl"`, g.lesson, 10, 120)}분</label>
+          <label>쉬는 시간 ${numf(`data-s="schedGen.brk" data-num="1" data-f="gb"`, g.brk, 0, 60)}분</label>
+          <label>점심 ${numf(`data-s="schedGen.lunch" data-num="1" data-f="gu"`, g.lunch, 0, 120)}분</label>
+          <button class="btn sm primary" data-act="sched-gen-all">모든 시정표 만들기</button>
+          <span class="hint">모든 시정표(학년군)에 같은 수업·쉬는 시간으로 시각을 채웁니다. 그 뒤 점심·중간놀이를 ⠿ 로 끌어 옮기거나, 점심 위치·교시 수를 바꾸면 시각이 저절로 다시 맞춰집니다.</span></div>`; })()}
         <div class="grade-sched">${grades.filter((g) => (d.classCounts[g - 1] || 0) > 0).map((g) => `<label>${g}학년<select data-s="gradeSched.${g}" data-structural="1">${d.schedules.map((x) => `<option value="${E(x.id)}" ${T.schedOfGrade(d, g).id === x.id ? "selected" : ""}>${E(x.name || "시정표")}</option>`).join("")}</select></label>`).join("")}</div>
         ${d.schedules.map(schedPanel).join("")}
       </section>`;
+  }
+  // 학년마다 과목별 기본 시수 합계 / 한 주 수업 칸 (요일별 교시 합)
+  const gradeHours = (d, g) => {
+    const on = (x) => !Array.isArray(x.grades) || x.grades.includes(g);
+    const sum = d.subjects.filter(on).reduce((n, x) => n + (Number((x.hours || {})[g]) || 0), 0);
+    const sch = T.schedOfGrade(d, g);
+    const cap = T.dayList(d).reduce((n, dd) => n + T.dayPeriodsOf(sch, dd), 0);
+    return { sum, cap };
+  };
+  const hourSumHTML = (d, gs) => gs.map((g) => { const { sum, cap } = gradeHours(d, g); return `<span class="hs ${!sum ? "" : sum === cap ? "ok" : sum > cap ? "over" : "under"}" data-hs="${g}">${g}학년 <b>${sum}</b>/${cap}</span>`; }).join("");
+  function updHourSums() {
+    const d = draft();
+    app.querySelectorAll("[data-hs]").forEach((el) => { const g = Number(el.dataset.hs), { sum, cap } = gradeHours(d, g); el.className = `hs ${!sum ? "" : sum === cap ? "ok" : sum > cap ? "over" : "under"}`; el.innerHTML = `${g}학년 <b>${sum}</b>/${cap}`; });
   }
   function setSubj(d) {
     const maxG = d.level === "elem" ? 6 : 3;
@@ -3776,7 +3804,7 @@ window.TT_CONFIG = {
         const isOpen = !!open[grp.k];
         return `<section class="panel subj-grp ${isOpen ? "open" : ""}">
           <button type="button" class="subj-grp-head" data-act="subj-grp" data-k="${grp.k}" aria-expanded="${isOpen}">
-            <span class="caret">${isOpen ? "▾" : "▸"}</span><b>${E(grp.name)}</b><span class="hint">${items.length}과목</span>
+            <span class="caret">${isOpen ? "▾" : "▸"}</span><b>${E(grp.name)}</b><span class="hint">${items.length}과목</span><span class="hsums" title="주당 기본 시수 합계 / 한 주 수업 칸">${hourSumHTML(d, grp.gs)}</span>
             <span class="subj-peek">${items.map(({ x }) => `<i style="${T.colorVars(x.color)}">${E(x.short || x.name || "?")}</i>`).join("")}</span></button>
           ${isOpen ? `<div class="subj-list" data-list-tbl="subjects" style="--gn:${maxG}">
             ${items.map(({ x, i }) => row(x, i, grp)).join("") || `<p class="hint">이 학년군 과목이 없습니다.</p>`}
@@ -4037,7 +4065,7 @@ window.TT_CONFIG = {
   /* 시정표: 쉬는 시간들(점심·중간놀이 …)을 넣어 시각 계산
      교시 사이 간격 = 그 자리에 점심·중간놀이가 있으면 그 분들의 합, 없으면 쉬는 시간 */
   function genTimes(x) {
-    const g = { start: "09:00", lesson: 40, brk: 10, lunch: 40, ...(x.gen || {}) };
+    const g = T.schedGenOf(draft());
     let t = T.toMin(g.start);
     if (t == null) return false;
     const L = Number(g.lesson) || 40, Bk = Math.max(0, Number(g.brk) || 0), Lu = Math.max(0, Number(g.lunch) || 0);
@@ -4053,15 +4081,16 @@ window.TT_CONFIG = {
       if (!here.length) { t += Bk; continue; }
       here.forEach((h) => { const span = { s: T.hm(t), e: T.hm(t + h.min) }; if (h.lunch) lunch = span; else Object.assign(h.b, span); t += h.min; });
     }
-    x.times = times; x.lunch = lunch || {}; x.gen = g;
+    x.times = times; x.lunch = lunch || {}; delete x.gen;
     return { first: times[0].s, last: times[times.length - 1].e, lunch };
   }
   function moveBreak(i, b, at) {
     const d = draft(), x = d.schedules[i]; if (!x) return;
     at = Math.max(1, Math.min(x.periods - 1, at));
     if (b === "lunch") x.lunchAfter = at; else { const br = (x.breaks || []).find((y) => y.id === b); if (!br) return; br.after = at; }
+    const r = genTimes(x);
     markDirty(); render();
-    T.toast(`${b === "lunch" ? "점심시간" : "쉬는 시간"}을 ${at}교시 뒤로 옮겼습니다.`, "info", { label: "시각 다시 계산", fn: () => { genTimes(draft().schedules[i]); markDirty(); render(); } });
+    T.toast(`${b === "lunch" ? "점심시간" : (x.breaks.find((y) => y.id === b) || {}).name || "쉬는 시간"}을 ${at}교시 뒤로 옮기고 시각을 다시 맞췄습니다${r && r.lunch ? ` (점심 ${r.lunch.s}~${r.lunch.e})` : ""}.`);
   }
   async function importSchedXlsx(file) {
     try {
@@ -4781,27 +4810,26 @@ window.TT_CONFIG = {
     "set-save": (el) => saveSettings(el),
     "set-revert": () => { A.set.draft = null; A.set.dirty = false; render(); },
     "set-day": (el) => { const d = draft(), x = Number(el.dataset.v); d.days = d.days.includes(x) ? d.days.filter((y) => y !== x) : [...d.days, x].sort(); markDirty(); render(); },
-    "sched-gen": async (el) => {
-      const d = draft(), x = d.schedules[Number(el.dataset.i)]; if (!x) return;
-      const g = { start: "09:00", lesson: 40, brk: 10, lunch: 40, ...(x.gen || {}) };
+    "sched-gen-all": async () => {
+      const d = draft(), g = T.schedGenOf(d);
       if (T.toMin(g.start) == null) { T.toast("1교시 시작 시각을 넣어 주세요.", "error"); return; }
-      if (x.times.some((v, k) => k < x.periods && v && v.s) && !(await T.confirm(`'${x.name}' 교시 시각을 새로 만들까요?\n수업 ${g.lesson}분 · 쉬는 시간 ${g.brk}분 · 점심 ${g.lunch}분 (${x.lunchAfter ? x.lunchAfter + "교시 뒤" : "점심 없음"})${(x.breaks || []).length ? "\n" + x.breaks.map((b) => `${b.name} ${b.min}분 (${b.after}교시 뒤)`).join(", ") : ""}`, { ok: "만들기" }))) return;
-      const r = genTimes(x);
+      if (!(await T.confirm(`시정표 ${d.schedules.length}개의 교시 시각을 새로 만들까요?\n1교시 ${g.start} · 수업 ${g.lesson}분 · 쉬는 시간 ${g.brk}분 · 점심 ${g.lunch}분\n(점심·중간놀이 자리는 시정표마다 그대로)`, { ok: "만들기" }))) return;
+      const out = d.schedules.map((x) => { const r = genTimes(x); return `${x.name} ${r.first}~${r.last}`; });
       markDirty(); render();
-      T.toast(`${x.name}: ${r.first} ~ ${r.last}${r.lunch ? ` · 점심 ${r.lunch.s}~${r.lunch.e}` : ""}`);
+      T.toast(out.join(" · "));
     },
     "brk-add": (el) => {
       const x = draft().schedules[Number(el.dataset.i)]; if (!x) return;
       const name = el.dataset.name || "쉬는 시간";
-      if (name === "점심시간") { if (!x.lunchAfter) x.lunchAfter = Math.min(4, x.periods - 1); markDirty(); render(); return; }
+      if (name === "점심시간") { if (!x.lunchAfter) x.lunchAfter = Math.min(4, x.periods - 1); genTimes(x); markDirty(); render(); return; }
       x.breaks = [...(x.breaks || []), { id: T.uid("b"), name, after: Math.min(2, x.periods - 1), min: name === "중간놀이" ? 20 : 10, s: "", e: "" }];
-      markDirty(); render();
-      T.toast(`${name}을(를) 넣었습니다. ⠿ 를 끌어 자리를 옮기고, '시정표 만들기'로 시각을 다시 계산하세요.`);
+      genTimes(x); markDirty(); render();
+      T.toast(`${name}을(를) 넣고 시각을 다시 맞췄습니다. ⠿ 를 끌어 자리를 옮길 수 있습니다.`);
     },
     "brk-del": (el) => {
       const x = draft().schedules[Number(el.dataset.i)]; if (!x) return;
       if (el.dataset.b === "lunch") x.lunchAfter = 0; else x.breaks = (x.breaks || []).filter((b) => b.id !== el.dataset.b);
-      markDirty(); render();
+      genTimes(x); markDirty(); render();
     },
     "sched-preset": async () => {
       const d = draft();
@@ -5018,6 +5046,8 @@ window.TT_CONFIG = {
         d.classCounts = fresh.classCounts;
         if (!(Object.keys(A.slots).length)) { d.subjects = fresh.subjects; d.rooms = fresh.rooms; d.schedules = fresh.schedules; d.gradeSched = {}; d.periods = fresh.periods; }
       }
+      // 점심 위치·교시 수·쉬는 시간 길이를 바꾸면 그 시정표 시각을 저절로 다시 맞춤
+      { const m = /^schedules\.(\d+)\.(lunchAfter|periods|breaks\.\d+\.min)$/.exec(el.dataset.s); if (m && e.type === "change") { const x = d.schedules[Number(m[1])]; if (x) { if (x.lunchAfter >= x.periods) x.lunchAfter = 0; genTimes(x); if (m[2].startsWith("breaks")) render(); } } }
       if (el.dataset.s.endsWith(".role") && e.type === "change") { const i = Number(el.dataset.s.split(".")[1]); if (v !== "homeroom") d.people[i].cls = ""; else { d.people[i].subject = ""; d.people[i].room = ""; } }
       markDirty();
       if (e.type === "change" && (el.dataset.structural || el.dataset.s.startsWith("classCounts"))) render();
@@ -5034,9 +5064,9 @@ window.TT_CONFIG = {
     if (on === "my-room" && e.type === "change") setMyRoom(actor(), el.value);
     if (on === "pr-hours") { A.pr.hours = el.checked; render(); }
     if (on === "hro" && e.type === "change") { const d = draft(); d.homeroomOpen = el.value !== "0"; d.finalized = el.value === "2"; markDirty(); }
-    if (on === "subj-hours" && e.type === "change") {
+    if (on === "subj-hours") {
       const d = draft(), x = d.subjects[Number(el.dataset.i)], gs = String(el.dataset.gs || "").split(",").map(Number).filter(Boolean);
-      if (x) { const h = Math.max(0, Math.min(12, Number(el.value) || 0)); x.hours = { ...(x.hours || {}) }; gs.forEach((g) => { if (h) x.hours[g] = h; else delete x.hours[g]; }); markDirty(); }
+      if (x) { const h = Math.max(0, Math.min(12, Number(el.value) || 0)); x.hours = { ...(x.hours || {}) }; gs.forEach((g) => { if (h) x.hours[g] = h; else delete x.hours[g]; }); markDirty(); updHourSums(); }
     }
     if ((on === "subj-asg" || on === "subj-asg-pid" || on === "subj-asg-h") && e.type === "change") {
       const d = draft(), x = d.subjects[Number(el.dataset.i)], gs = String(el.dataset.gs || "").split(",").map(Number).filter(Boolean);
@@ -5070,6 +5100,7 @@ window.TT_CONFIG = {
   };
   app.addEventListener("input", (e) => {
     if (e.target.dataset.on === "school-q") { liveSearch(e.target.value); return; }
+    if (e.target.dataset.on === "subj-hours") { onField(e); return; }
     if (e.target.dataset.s && e.target.tagName !== "SELECT" && e.target.type !== "checkbox") onField(e);
   });
   app.addEventListener("change", onField);
