@@ -355,6 +355,28 @@ export class SchoolDO extends DurableObject {
         this.broadcast({ t: "slots", pid, e, at });
         return json({ ok: true });
       }
+      // 지우고 넣기: 다른 사람이 넣은 칸 몇 개를 지움
+      // 관리자는 누구 것이든, 교과전담·강사는 담임이 넣은 칸만 (담임은 교과전담 칸을 지울 수 없음)
+      if (path === "/take" && method === "POST") {
+        const pid = String(body.pid || ""), from = String(body.from || "");
+        const keys = Array.isArray(body.keys) ? body.keys.map(String).slice(0, 12) : [];
+        const P = (id) => (school.people || []).find((x) => x.id === id);
+        if (!people.has(pid) || !people.has(from) || pid === from || !keys.length) return fail(400, "bad", "요청이 올바르지 않습니다.");
+        if (!admin && !me.has(pid)) return fail(403, "denied", "권한이 없습니다. 인증코드로 다시 들어와 주세요.");
+        if (!admin && school.finalized) return fail(403, "finalized", "시간표가 확정(3단계)되어 고칠 수 없습니다.");
+        if (!admin && !(P(pid).role !== "homeroom" && P(from).role === "homeroom")) return fail(403, "denied", "다른 선생님 수업은 그 선생님이나 관리자만 지울 수 있습니다.");
+        const row = [...this.sql.exec("SELECT e FROM slots WHERE pid=?", from)][0];
+        const old = row ? JSON.parse(row.e) : {}, e = { ...old };
+        keys.forEach((k) => { if (e[k] && !e[k].b) delete e[k]; });
+        const at = Date.now();
+        try {
+          this.ensureChanges(); const df = diffEntries(old, e);
+          if (df.del) this.sql.exec("INSERT INTO changes (at, pid, by, d) VALUES (?, ?, ?, ?)", at, from, me.has(pid) ? pid : ADMIN, JSON.stringify(df));
+        } catch (err) {}
+        this.sql.exec("INSERT INTO slots (pid, e, at) VALUES (?, ?, ?) ON CONFLICT(pid) DO UPDATE SET e=excluded.e, at=excluded.at", from, JSON.stringify(e), at);
+        this.broadcast({ t: "slots", pid: from, e, at });
+        return json({ ok: true, e });
+      }
       if (path === "/changes" && method === "GET") {
         if (!admin) return fail(403, "denied", "관리자만 볼 수 있습니다.");
         this.ensureChanges();
