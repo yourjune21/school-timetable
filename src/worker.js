@@ -265,7 +265,7 @@ export class SchoolDO extends DurableObject {
       if (path === "/state" && method === "GET") {
         if (!this.exists()) return json({ school: null, slots: {} });
         this.ctx.waitUntil(this.register(sidH)); // 예전에 만든 학교도 처음 열릴 때 검색 목록에 올라감
-        return json({ school: this.kvGet("school"), slots: this.allSlots() });
+        return json({ school: this.kvGet("school"), slots: this.allSlots(), book: this.kvGet("book") || {} });
       }
       const body = method === "GET" ? {} : await req.json().catch(() => ({}));
       const ip = req.headers.get("x-tt-ip") || "local";
@@ -362,6 +362,29 @@ export class SchoolDO extends DurableObject {
         return json({ changes: out });
       }
 
+      // 특별실 예약 시간표 (학급 시간표와 따로): 들어온 선생님 누구나 빈 칸에 넣고, 자기가 넣은 칸만 고침 (관리자는 모두)
+      if (path === "/book" && method === "PUT") {
+        if (!me.size) return fail(403, "denied", "인증코드로 들어와야 넣을 수 있습니다.");
+        const room = String(body.room || "").slice(0, 40), k = String(body.k || "");
+        const book = this.kvGet("book") || {};
+        if (body.clear) {
+          if (!admin) return fail(403, "denied", "관리자만 특별실 시간표를 모두 지울 수 있습니다.");
+          delete book[room];
+        } else {
+          if (!room || !/^[0-9]\|[0-9]{1,2}$/.test(k)) return fail(400, "bad", "잘못된 칸입니다.");
+          const cur = (book[room] || {})[k];
+          if (cur && !admin && !me.has(cur.by)) return fail(403, "taken", "다른 선생님이 넣은 칸입니다. 그 선생님이나 관리자만 바꿀 수 있습니다.");
+          if (!body.v) { if (book[room]) delete book[room][k]; }
+          else {
+            const by = me.has(String(body.v.by || "")) ? String(body.v.by) : [...me].find((x) => x !== ADMIN) || ADMIN;
+            (book[room] = book[room] || {})[k] = { t: String(body.v.t || "").slice(0, 40), cls: String(body.v.cls || "").slice(0, 12), by, at: Date.now() };
+          }
+        }
+        if (JSON.stringify(book).length > 300000) return fail(413, "too_big", "특별실 시간표가 너무 큽니다.");
+        this.kvSet("book", book);
+        this.broadcast({ t: "book", book });
+        return json({ ok: true });
+      }
       // 선생님이 자기 기본 교실을 정함 (학교 설정 중 자기 줄의 room 하나만)
       if (path === "/me-room" && method === "POST") {
         const pid = String(body.pid || ""), room = String(body.room || "");
