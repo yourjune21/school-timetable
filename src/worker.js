@@ -393,7 +393,7 @@ export class SchoolDO extends DurableObject {
           if (!admin) return fail(403, "denied", "관리자만 특별실 시간표를 모두 지울 수 있습니다.");
           delete book[room];
         } else {
-          if (!room || !/^[0-9]\|[0-9]{1,2}(\|[0-9]{3,4})?$/.test(k)) return fail(400, "bad", "잘못된 칸입니다.");
+          if (!room || !/^[0-9]\|[0-9]{1,2}(\|[0-9]{3,4})?(~[2-9])?$/.test(k)) return fail(400, "bad", "잘못된 칸입니다.");
           const cur = (book[room] || {})[k];
           if (cur && !admin && !me.has(cur.by)) return fail(403, "taken", "다른 선생님이 넣은 칸입니다. 그 선생님이나 관리자만 바꿀 수 있습니다.");
           if (!body.v) { if (book[room]) delete book[room][k]; }
