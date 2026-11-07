@@ -55,7 +55,16 @@ export default {
       const ip = req.headers.get("cf-connecting-ip") || "local";
       const chk = await reg.fetch(new Request("https://school.internal/reg/super", { method: "POST", headers: { "x-tt-sid": REGISTRY, "content-type": "application/json", "x-tt-ip": ip, "x-tt-super-code": String(env.SUPER_CODE || "") }, body: JSON.stringify({ code: b.code || "" }) }));
       if (!chk.ok) return chk;
-      if (url.pathname === "/api/super/schools") return reg.fetch(new Request("https://school.internal/reg/all", { headers: { "x-tt-sid": REGISTRY } }));
+      if (url.pathname === "/api/super/schools") {
+        // 학교 목록 + 각 학교의 학교관리자 코드 (최고관리자에게만)
+        const r = await reg.fetch(new Request("https://school.internal/reg/all", { headers: { "x-tt-sid": REGISTRY } }));
+        const j = await r.json().catch(() => ({ schools: [] }));
+        const schools = await Promise.all((j.schools || []).map(async (x) => {
+          if (!SID_RE.test(String(x.sid || ""))) return x;
+          try { const q = await env.SCHOOL.get(env.SCHOOL.idFromName(x.sid)).fetch(new Request("https://school.internal/super-info", { method: "POST", headers: { "x-tt-sid": x.sid, "x-tt-super-ok": "1", "content-type": "application/json" }, body: "{}" })); const k = await q.json(); return { ...x, adminCode: k.admin || "" }; } catch (e) { return x; }
+        }));
+        return json({ schools });
+      }
       if (url.pathname === "/api/super/admin-code") {
         const sid = String(b.sid || "");
         if (!SID_RE.test(sid)) return fail(400, "bad", "학교 코드가 올바르지 않습니다.");
@@ -276,6 +285,10 @@ export class SchoolDO extends DurableObject {
         const lock = this.sql.exec("SELECT h FROM locks WHERE pid=?", ADMIN).toArray()[0];
         if (!lock) return fail(400, "bad", "학교관리자 코드가 없습니다. 먼저 코드를 정하세요.");
         return json({ ok: true, token: this.newSession(ADMIN, lock.h) });
+      }
+      if (path === "/super-info" && method === "POST") {
+        if (req.headers.get("x-tt-super-ok") !== "1") return fail(403, "super", "최고관리자만 할 수 있습니다.");
+        return json({ admin: this.exists() ? this.kvGet("admincode") || "" : "" });
       }
       if (path === "/super-admin-code" && method === "POST") {
         if (req.headers.get("x-tt-super-ok") !== "1") return fail(403, "super", "최고관리자만 할 수 있습니다.");
